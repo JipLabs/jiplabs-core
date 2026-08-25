@@ -181,3 +181,68 @@ export {
   type EvaluateDomainDecisionAuthorizationInput,
   type EvaluateDomainDecisionAuthorizationResult,
 } from "./domain/index.js";
+
+export {
+  GovernorKernel,
+  assertInvalidTransition,
+  canTransition,
+  assertTransition,
+  checkpointForState,
+  createInitialRun,
+  transitionRun,
+  InMemoryGovernanceRunStore,
+  type GovernorIds,
+  type GovernorKernelDeps,
+  type GovernorRunInput,
+  type GovernorRunResult,
+  type HumanApprovalInput,
+  type HumanRejectionInput,
+  type RollbackExecutionInput,
+  type GovernanceRun,
+  type GovernanceRunStore,
+  type KernelState,
+  type RecoveryCheckpoint,
+} from "./governor/index.js";
+
+export {
+  createGovernedActionAuthorization,
+  assertValidForExecution,
+  type GovernedActionAuthorization,
+} from "./authorization/index.js";
+
+export {
+  executeGovernedAction,
+  assertExecutorNotBypassed,
+  type GovernedExecutionInput,
+  type GovernedExecutionResult,
+} from "./execution/index.js";
+
+export {
+  createCoreEvaluation,
+  mapDomainVerdict,
+  type CoreEvaluation,
+  type CoreEvaluationVerdict,
+} from "./evaluation/index.js";
+
+export {
+  resolveDisposition,
+  type Disposition,
+} from "./disposition/index.js";
+
+export {
+  InMemoryExecutionClaimStore,
+  assertClaimAvailable,
+  type ExecutionClaim,
+  type ExecutionClaimStore,
+} from "./concurrency/index.js";
+
+export {
+  canResumeFromCheckpoint,
+} from "./recovery/index.js";
+
+export {
+  createOutcomeRecord,
+  outcomeKindFromExecutionStatus,
+  type OutcomeKind,
+  type OutcomeRecord,
+} from "./outcomes/index.js";

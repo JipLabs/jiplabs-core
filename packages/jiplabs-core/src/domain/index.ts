@@ -10,7 +10,7 @@ import type { Authority, AuthorityGrant } from "../authority/index.js";
 import type { Actor } from "../actors/index.js";
 import type { PolicyVersion } from "../policies/index.js";
 import type { RollbackPlan } from "../rollback/index.js";
-import type { IsoTimestamp, ResourceRef } from "../schema.js";
+import type { IsoTimestamp, JsonSafeMetadata, ResourceRef } from "../schema.js";
 
 export type DomainObservation = {
   readonly id: string;
@@ -65,8 +65,9 @@ export interface DomainActionExecutor {
 }
 
 export type DomainOutcomeEvaluation = {
-  readonly verdict: "KEEP" | "ROLLBACK" | "FOLLOW_UP" | "INCONCLUSIVE";
+  readonly verdict: string;
   readonly rationale: string;
+  readonly details?: JsonSafeMetadata;
 };
 
 /** CORE-01 runtime contract — not invoked by CORE-00 evaluation. */

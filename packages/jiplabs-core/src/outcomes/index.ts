@@ -8,10 +8,28 @@ import type {
   SubjectRef,
 } from "../schema.js";
 
+export type OutcomeKind =
+  | "SUCCESS"
+  | "FAILURE"
+  | "PARTIAL"
+  | "UNKNOWN"
+  | "PENDING";
+
 export type Outcome = EntityEnvelope & {
   readonly decisionId: string;
   readonly actionResultId: string;
   readonly subject: SubjectRef;
+  readonly outcomeValue: JsonSafeValue;
+  readonly observedAt: IsoTimestamp;
+  readonly metadata?: JsonSafeMetadata;
+};
+
+/** CORE-01 outcome record with execution result classification. */
+export type OutcomeRecord = EntityEnvelope & {
+  readonly decisionId: string;
+  readonly actionResultId: string;
+  readonly subject: SubjectRef;
+  readonly kind: OutcomeKind;
   readonly outcomeValue: JsonSafeValue;
   readonly observedAt: IsoTimestamp;
   readonly metadata?: JsonSafeMetadata;
@@ -82,4 +100,44 @@ export function createEvaluation(input: {
     rationale: requireNonEmpty(input.rationale, "rationale"),
     ...(input.metadata ? { metadata: input.metadata } : {}),
   });
+}
+
+export function createOutcomeRecord(input: {
+  readonly id: string;
+  readonly decisionId: string;
+  readonly actionResultId: string;
+  readonly subject: SubjectRef;
+  readonly kind: OutcomeKind;
+  readonly outcomeValue: JsonSafeValue;
+  readonly observedAt: IsoTimestamp;
+  readonly createdAt: IsoTimestamp;
+  readonly recordedAt?: IsoTimestamp;
+  readonly provenance: Provenance;
+  readonly metadata?: JsonSafeMetadata;
+}): OutcomeRecord {
+  return freezeDeep({
+    ...envelope(input),
+    decisionId: requireNonEmpty(input.decisionId, "decisionId"),
+    actionResultId: requireNonEmpty(input.actionResultId, "actionResultId"),
+    subject: freezeDeep({ ...input.subject }),
+    kind: input.kind,
+    outcomeValue: input.outcomeValue,
+    observedAt: requireIsoTimestamp(input.observedAt, "observedAt"),
+    ...(input.metadata ? { metadata: input.metadata } : {}),
+  });
+}
+
+export function outcomeKindFromExecutionStatus(
+  status: "EXECUTED" | "FAILED" | "BLOCKED" | "REQUESTED" | "AUTHORIZED",
+): OutcomeKind {
+  switch (status) {
+    case "EXECUTED":
+      return "SUCCESS";
+    case "FAILED":
+      return "FAILURE";
+    case "BLOCKED":
+      return "UNKNOWN";
+    default:
+      return "PENDING";
+  }
 }

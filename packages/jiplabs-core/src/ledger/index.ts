@@ -12,15 +12,24 @@ export type GovernanceEventType =
   | "PROPOSAL_CREATED"
   | "AUTHORITY_GRANTED"
   | "AUTHORITY_REVOKED"
+  | "AUTHORITY_CHECKED"
   | "POLICY_ACTIVATED"
   | "POLICY_SUPERSEDED"
   | "DECISION_MADE"
   | "ACTION_AUTHORIZED"
+  | "ACTION_EXECUTION_STARTED"
   | "ACTION_EXECUTED"
+  | "ACTION_FAILED"
   | "OUTCOME_RECORDED"
   | "EVALUATION_COMPLETED"
+  | "HUMAN_APPROVAL_REQUESTED"
+  | "HUMAN_APPROVED"
+  | "HUMAN_REJECTED"
   | "ROLLBACK_TRIGGERED"
+  | "ROLLBACK_AUTHORIZED"
+  | "ROLLBACK_EXECUTED"
   | "ROLLBACK_COMPLETED"
+  | "ROLLBACK_FAILED"
   | "HUMAN_CHALLENGE"
   | "HUMAN_OVERRIDE";
 
@@ -160,7 +169,6 @@ export class InMemoryGovernanceLedger implements GovernanceLedger {
     this.#events.push(stored);
     this.#byIdempotency.set(stored.idempotencyKey, stored);
     this.#byEventId.set(stored.eventId, stored);
-    Object.freeze(this.#events);
     return { status: "appended", event: stored };
   }
 

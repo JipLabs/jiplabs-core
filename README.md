@@ -3,7 +3,7 @@
 Domain-agnostic governance constitution and contracts for governed autonomous systems.
 
 **CORE-00** — contracts, minimal evaluation, tests, and documentation.  
-**CORE-01** — Governor Kernel (not yet implemented).
+**CORE-01** — Governor Kernel (operational runtime). Implemented.
 
 ## Quick start
 

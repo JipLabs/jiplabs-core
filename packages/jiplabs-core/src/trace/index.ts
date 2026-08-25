@@ -1,10 +1,13 @@
 import { GovernanceError, GovernanceErrorCode } from "../errors.js";
 import { freezeDeep } from "../envelope.js";
 import type { ActionAuthorization, ActionRequest, ActionResult } from "../actions/index.js";
+import type { GovernedActionAuthorization } from "../authorization/index.js";
+import type { Disposition } from "../disposition/index.js";
+import type { CoreEvaluation } from "../evaluation/index.js";
 import type { Decision, DecisionExplanation, DecisionProposal } from "../decisions/index.js";
 import type { Evidence, ObservationRef } from "../evidence/index.js";
 import type { GovernanceEvent } from "../ledger/index.js";
-import type { Evaluation, Outcome } from "../outcomes/index.js";
+import type { Evaluation, Outcome, OutcomeRecord } from "../outcomes/index.js";
 import type { Override } from "../override/index.js";
 import type { PolicyVersion } from "../policies/index.js";
 import type { RollbackExecution, RollbackPlan } from "../rollback/index.js";
@@ -23,7 +26,9 @@ export type TraceStage =
   | "OUTCOME"
   | "EVALUATION"
   | "OVERRIDE"
-  | "ROLLBACK";
+  | "ROLLBACK"
+  | "DISPOSITION"
+  | "HUMAN_APPROVAL";
 
 export type TraceLink = {
   readonly stage: TraceStage;
@@ -48,6 +53,10 @@ export type DecisionTrace = EntityEnvelope & {
   readonly rollbackPlanId?: string;
   readonly canRollback: boolean;
   readonly humanIntervened: boolean;
+  readonly autonomyMode?: string;
+  readonly disposition?: Disposition;
+  readonly evaluationId?: string;
+  readonly authorizationId?: string;
 };
 
 export type TraceInput = {
@@ -63,10 +72,11 @@ export type TraceInput = {
   readonly evidence: readonly Evidence[];
   readonly observations?: readonly ObservationRef[];
   readonly actionRequest?: ActionRequest;
-  readonly actionAuthorization?: ActionAuthorization;
+  readonly actionAuthorization?: GovernedActionAuthorization | ActionAuthorization;
   readonly actionResult?: ActionResult;
-  readonly outcome?: Outcome;
-  readonly evaluation?: Evaluation;
+  readonly outcome?: Outcome | OutcomeRecord;
+  readonly evaluation?: Evaluation | CoreEvaluation;
+  readonly disposition?: Disposition;
   readonly overrides?: readonly Override[];
   readonly rollbackPlan?: RollbackPlan;
   readonly rollbackExecution?: RollbackExecution;
@@ -172,10 +182,20 @@ export function buildDecisionTrace(input: TraceInput): DecisionTrace {
     });
   }
 
+  if (input.disposition) {
+    links.push({
+      stage: "DISPOSITION",
+      refId: input.decisionId,
+      at: input.evaluation?.evaluatedAt ?? at,
+      summary: `Disposition ${input.disposition}`,
+    });
+  }
+
   links.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 
   const overrideIds = (input.overrides ?? []).map((o) => o.id);
-  const humanIntervened = overrideIds.length > 0;
+  const humanIntervened =
+    overrideIds.length > 0 || input.decision.humanApprovalRequired;
 
   return freezeDeep({
     id: input.id,
@@ -198,6 +218,10 @@ export function buildDecisionTrace(input: TraceInput): DecisionTrace {
     rollbackPlanId: input.rollbackPlan?.id ?? input.decision.rollbackPlanId,
     canRollback: Boolean(input.rollbackPlan ?? input.decision.rollbackPlanId),
     humanIntervened,
+    autonomyMode: input.decision.autonomyMode,
+    disposition: input.disposition,
+    evaluationId: input.evaluation?.id,
+    authorizationId: input.actionAuthorization?.id,
   });
 }
 
@@ -222,6 +246,10 @@ export function answerTraceQuestions(trace: DecisionTrace): {
   readonly outcomeRecorded?: string;
   readonly canRollback: boolean;
   readonly humanIntervened: boolean;
+  readonly autonomyMode?: string;
+  readonly disposition?: Disposition;
+  readonly authorizationId?: string;
+  readonly evaluationId?: string;
 } {
   return {
     whoDecided: trace.who,
@@ -233,5 +261,9 @@ export function answerTraceQuestions(trace: DecisionTrace): {
     outcomeRecorded: trace.outcomeId,
     canRollback: trace.canRollback,
     humanIntervened: trace.humanIntervened,
+    autonomyMode: trace.autonomyMode,
+    disposition: trace.disposition,
+    authorizationId: trace.authorizationId,
+    evaluationId: trace.evaluationId,
   };
 }
