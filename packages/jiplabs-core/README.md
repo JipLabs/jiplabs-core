@@ -43,8 +43,9 @@ Proposal
 | **CORE-00** | Governance constitution — contracts for actors, authority, policies, evidence, decisions, rollback, override, ledger, trace |
 | **CORE-01** | Governor Kernel — operational runtime, action authorization, human approval, rollback execution, idempotency, recovery |
 | **CORE-02** | Durable governance state — SQLite persistence, restart recovery, replay, reconciliation, integrity verification, migrations |
+| **CORE-03** | Evaluation corpus — case admission, suites, baselines, regression detection, learning signals, governance recommendations |
 
-CORE-03 and beyond are not included in this release.
+CORE-04 and beyond are not included in this release.
 
 ## Install
 

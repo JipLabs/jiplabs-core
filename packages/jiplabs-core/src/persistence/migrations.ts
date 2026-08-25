@@ -78,7 +78,27 @@ export const MIGRATION_001_INITIAL: Migration = {
   ],
 };
 
-export const ALL_MIGRATIONS: readonly Migration[] = [MIGRATION_001_INITIAL];
+export const MIGRATION_002_EVALUATION_CORPUS: Migration = {
+  id: "002_evaluation_corpus",
+  checksum: sha256Hex("002_evaluation_corpus"),
+  sql: [
+    `CREATE TABLE IF NOT EXISTS evaluation_corpus_entities (
+      kind TEXT NOT NULL,
+      primary_key TEXT NOT NULL,
+      secondary_key TEXT NOT NULL DEFAULT '',
+      fingerprint TEXT,
+      record_json TEXT NOT NULL,
+      PRIMARY KEY (kind, primary_key, secondary_key)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_eval_corpus_fingerprint ON evaluation_corpus_entities(fingerprint)`,
+    `CREATE INDEX IF NOT EXISTS idx_eval_corpus_kind ON evaluation_corpus_entities(kind)`,
+  ],
+};
+
+export const ALL_MIGRATIONS: readonly Migration[] = [
+  MIGRATION_001_INITIAL,
+  MIGRATION_002_EVALUATION_CORPUS,
+];
 
 export type MigrationApplier = {
   readonly getAppliedMigrationIds: () => readonly string[];
