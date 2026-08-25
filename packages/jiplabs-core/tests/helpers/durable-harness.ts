@@ -7,8 +7,8 @@ import {
   openNodeSqliteGovernanceStorage,
   type GovernanceRun,
   type GovernanceRunStore,
-  type SqliteGovernanceStorage,
 } from "../../src/index.js";
+import type { SqliteGovernanceStorage } from "../../src/persistence/sqlite/storage.js";
 import {
   activeGrant,
   activePolicy,

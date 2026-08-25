@@ -1,10 +1,35 @@
 {
   "name": "@jiplabs/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": false,
-  "description": "JipLabs Core: domain-agnostic governance constitution (CORE-00), Governor Kernel (CORE-01), durable governance state (CORE-02).",
+  "description": "Governance kernel for governed autonomous systems — authority, policy, evidence, decisions, execution authorization, audit, rollback and durable recovery.",
   "license": "MIT",
+  "author": "JipLabs LLC",
+  "homepage": "https://jiplabs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JipLabs/jiplabs-core.git",
+    "directory": "packages/jiplabs-core"
+  },
+  "bugs": {
+    "url": "https://github.com/JipLabs/jiplabs-core/issues"
+  },
+  "keywords": [
+    "governance",
+    "autonomous-systems",
+    "policy",
+    "authority",
+    "evidence",
+    "decisions",
+    "rollback",
+    "audit",
+    "jiplabs"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -16,12 +41,18 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "pack:check": "npm pack --dry-run"
   },
   "dependencies": {},
   "devDependencies": {

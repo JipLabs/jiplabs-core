@@ -8,16 +8,18 @@ import {
   computeActionRequestContentHash,
   createAuthority,
   createAuthorityGrant,
-  deserializeGovernanceRecord,
   GovernorKernel,
   GovernanceErrorCode,
   replayGovernanceRun,
   revokeAuthorityGrant,
-  serializeGovernanceRecord,
   verifyLedgerIntegrity,
-  verifySqliteLedgerHashChain,
   type DomainExecutionReconciler,
 } from "../src/index.js";
+import {
+  deserializeGovernanceRecord,
+  serializeGovernanceRecord,
+} from "../src/persistence/serialization.js";
+import { verifySqliteLedgerHashChain } from "../src/persistence/integrity.js";
 import {
   activeGrant,
   activePolicy,

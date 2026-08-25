@@ -4,7 +4,6 @@ import {
   assertHistoricalAuditSelfContained,
   createAuthority,
   createAuthorityGrant,
-  createDecisionMadeEvent,
   createPolicyVersion,
   evaluateAuthorityGrant,
   evaluateDomainDecisionAuthorization,
@@ -16,6 +15,7 @@ import {
   type DomainGovernanceAdapter,
   type PolicyGate,
 } from "../src/index.js";
+import { createDecisionMadeEvent } from "../src/ledger/index.js";
 import { buildResearchPromotionFixture } from "./fixtures/research-promotion-fixture.js";
 
 const AT = "2026-08-25T12:00:00.000Z";

@@ -6,7 +6,6 @@ import {
   activatePolicyVersion,
   assertExecutorNotBypassed,
   assertHistoricalAuditSelfContained,
-  assertInvalidTransition,
   assertLedgerAppendOnly,
   assertValidForExecution,
   authorizeOverride,
@@ -23,6 +22,7 @@ import {
   supersedePolicyVersion,
   type DomainAdapterBundle,
 } from "../src/index.js";
+import { assertInvalidTransition } from "../src/governor/kernel.js";
 import {
   activeGrant,
   activePolicy,

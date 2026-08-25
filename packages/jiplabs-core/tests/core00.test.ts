@@ -19,7 +19,6 @@ import {
   createDecision,
   createDecisionProposal,
   createEvaluation,
-  createGovernanceEvent,
   createOutcome,
   createPolicyVersion,
   evaluateAuthorityGrant,
@@ -27,7 +26,6 @@ import {
   evaluateDecisionProposal,
   evaluatePolicyGates,
   evaluateRollbackReadiness,
-  freezeDeep,
   GovernanceError,
   GovernanceErrorCode,
   InMemoryGovernanceLedger,
@@ -39,6 +37,8 @@ import {
   type DomainGovernanceAdapter,
   type PolicyGate,
 } from "../src/index.js";
+import { createGovernanceEvent } from "../src/ledger/index.js";
+import { freezeDeep } from "../src/envelope.js";
 import {
   buildResearchPromotionFixture,
   runResearchPromotionFixture,

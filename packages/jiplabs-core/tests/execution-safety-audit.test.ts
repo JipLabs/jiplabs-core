@@ -5,9 +5,9 @@ import {
   executeGovernedAction,
   GovernanceErrorCode,
   revokeAuthorityGrant,
-  transitionRun,
   type DomainExecutionReconciler,
 } from "../src/index.js";
+import { transitionRun } from "../src/governor/runtime-state.js";
 import {
   activePolicy,
   AT,

@@ -14,16 +14,7 @@ export {
   type SubjectRef,
 } from "./schema.js";
 
-export {
-  compareIso,
-  envelope,
-  freezeDeep,
-  requireIsoTimestamp,
-  requireNonEmpty,
-  schemaVersion,
-} from "./envelope.js";
-
-export { canonicalJson, sha256Canonical, sha256Hex } from "./hash.js";
+export { compareIso } from "./envelope.js";
 
 export { createActor, type Actor, type ActorType } from "./actors/index.js";
 
@@ -146,8 +137,6 @@ export {
 export {
   assertHistoricalAuditSelfContained,
   assertLedgerAppendOnly,
-  createDecisionMadeEvent,
-  createGovernanceEvent,
   InMemoryGovernanceLedger,
   type AppendResult,
   type GovernanceEvent,
@@ -168,7 +157,6 @@ export {
 export {
   assertDomainAdapterCannotBypassCore,
   evaluateDomainDecisionAuthorization,
-  governDomainDecision,
   type DomainActionExecutionRequest,
   type DomainActionExecutionResult,
   type DomainActionExecutor,
@@ -188,12 +176,9 @@ export {
 
 export {
   GovernorKernel,
-  assertInvalidTransition,
   canTransition,
   assertTransition,
   checkpointForState,
-  createInitialRun,
-  transitionRun,
   InMemoryGovernanceRunStore,
   type GovernorIds,
   type GovernorKernelDeps,
@@ -262,16 +247,10 @@ export {
 export {
   openNodeSqliteGovernanceStorage,
   openMemorySqliteGovernanceStorage,
-  openSqliteGovernanceStorage,
-  SqliteGovernanceStorage,
-  InMemoryExecutionAttemptStore,
-  serializeGovernanceRecord,
-  deserializeGovernanceRecord,
   verifyLedgerIntegrity,
   assertLedgerIntegrity,
   replayGovernanceRun,
   reconstructRunFromStore,
-  applyMigrations,
   assertSupportedSchemaVersion,
   PERSISTENCE_SCHEMA_VERSION,
   type GovernanceStorageBundle,
