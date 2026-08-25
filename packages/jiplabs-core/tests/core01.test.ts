@@ -37,6 +37,7 @@ import {
   PROVENANCE,
   rollbackPlan,
   TEST_RESOURCE,
+  verifiedRollbackOutcome,
 } from "./helpers/governor-harness.js";
 
 describe("CORE-01 Governor Kernel", () => {
@@ -332,13 +333,13 @@ describe("CORE-01 Governor Kernel", () => {
       rollbackExecutionId: "rb-exec-1",
       at: AT,
       provenance: PROVENANCE,
-      executeRollback: () => ({ status: "COMPLETED" }),
+      executeRollback: () => verifiedRollbackOutcome(),
     });
     expect(rollback.ok).toBe(false);
   });
 
   it("24. rollback executes exactly once", async () => {
-    const rollbackFn = vi.fn(() => ({ status: "COMPLETED" as const }));
+    const rollbackFn = vi.fn(() => verifiedRollbackOutcome());
     const { kernel, input, authority, grant } = buildHarness({
       policy: activePolicy({
         autonomyMode: "AUTONOMOUS_WITH_ROLLBACK",
@@ -417,7 +418,7 @@ describe("CORE-01 Governor Kernel", () => {
       rollbackExecutionId: "rb-exec-3",
       at: AT,
       provenance: PROVENANCE,
-      executeRollback: () => ({ status: "COMPLETED" }),
+      executeRollback: () => verifiedRollbackOutcome(),
     });
     const stored = kernel.runStore.get(run.run.runId)!;
     expect(stored.decision?.id).toBe(originalDecisionId);
@@ -576,11 +577,15 @@ describe("CORE-01 Governor Kernel", () => {
       executeGovernedAction({
         authorization: null as never,
         decision: { id: "d1" } as never,
+        actionRequest: { id: "ar1", action: "EXECUTE", subject: { type: "entity", id: "x", domain: "test-domain" }, decisionId: "d1" } as never,
         actionRequestId: "ar1",
         action: "EXECUTE",
         subject: { type: "entity", id: "x", domain: "test-domain" },
+        resourceKey: "test-domain|entity|target-1",
+        executorActorId: "executor-1",
         executor: adapter.actionExecutor,
         actionResultId: "res1",
+        executionAttemptId: "attempt-1",
         at: AT,
         provenance: PROVENANCE,
       }),

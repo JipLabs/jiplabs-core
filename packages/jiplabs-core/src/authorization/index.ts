@@ -1,4 +1,8 @@
 import { GovernanceError, GovernanceErrorCode } from "../errors.js";
+import {
+  computeActionRequestContentHash,
+  type ActionRequest,
+} from "../actions/index.js";
 import { envelope, freezeDeep, requireNonEmpty, requireIsoTimestamp } from "../envelope.js";
 import { sha256Canonical } from "../hash.js";
 import type { Decision } from "../decisions/index.js";
@@ -7,15 +11,19 @@ import type {
   EntityEnvelope,
   IsoTimestamp,
   Provenance,
+  SubjectRef,
 } from "../schema.js";
 
 export type GovernedActionAuthorization = EntityEnvelope & {
   readonly decisionId: string;
   readonly actionRequestId: string;
+  readonly actionRequestContentHash: string;
+  readonly resourceKey: string;
   readonly actorId: string;
   readonly executorActorId: string;
   readonly authorityRef: string;
   readonly authorityCode: string;
+  readonly authorityGrantContentHash: string;
   readonly policyId: string;
   readonly policyVersion: string;
   readonly policyContentHash: string;
@@ -30,10 +38,13 @@ export type GovernedActionAuthorization = EntityEnvelope & {
 function authorizationPayload(input: {
   readonly decisionId: string;
   readonly actionRequestId: string;
+  readonly actionRequestContentHash: string;
+  readonly resourceKey: string;
   readonly actorId: string;
   readonly executorActorId: string;
   readonly authorityRef: string;
   readonly authorityCode: string;
+  readonly authorityGrantContentHash: string;
   readonly policyId: string;
   readonly policyVersion: string;
   readonly policyContentHash: string;
@@ -47,9 +58,12 @@ function authorizationPayload(input: {
 export function createGovernedActionAuthorization(input: {
   readonly id: string;
   readonly decision: Decision;
+  readonly actionRequest: ActionRequest;
   readonly actionRequestId: string;
+  readonly resourceKey: string;
   readonly actorId: string;
   readonly executorActorId: string;
+  readonly authorityGrantContentHash: string;
   readonly policyContentHash: string;
   readonly rollbackReady: boolean;
   readonly authorizedAt: IsoTimestamp;
@@ -79,9 +93,17 @@ export function createGovernedActionAuthorization(input: {
       "rollback readiness required for authorization",
     );
   }
+  const actionRequestContentHash = computeActionRequestContentHash({
+    decisionId: input.actionRequest.decisionId,
+    action: input.actionRequest.action,
+    subject: input.actionRequest.subject,
+    metadata: input.actionRequest.metadata,
+  });
   const body = {
     decisionId: input.decision.id,
     actionRequestId: requireNonEmpty(input.actionRequestId, "actionRequestId"),
+    actionRequestContentHash,
+    resourceKey: requireNonEmpty(input.resourceKey, "resourceKey"),
     actorId: requireNonEmpty(input.actorId, "actorId"),
     executorActorId: requireNonEmpty(
       input.executorActorId,
@@ -89,6 +111,10 @@ export function createGovernedActionAuthorization(input: {
     ),
     authorityRef: input.decision.authorityRef,
     authorityCode: input.decision.authorityCode,
+    authorityGrantContentHash: requireNonEmpty(
+      input.authorityGrantContentHash,
+      "authorityGrantContentHash",
+    ),
     policyId: input.decision.policyRef,
     policyVersion: input.decision.policyVersion,
     policyContentHash: requireNonEmpty(
@@ -122,6 +148,62 @@ export function assertValidForExecution(
     throw new GovernanceError(
       GovernanceErrorCode.ACTION_NOT_AUTHORIZED,
       "authorization decision reference mismatch",
+    );
+  }
+}
+
+export function assertAuthorizationBinding(input: {
+  readonly authorization: GovernedActionAuthorization;
+  readonly actionRequest: ActionRequest;
+  readonly action: string;
+  readonly subject: SubjectRef;
+  readonly executorActorId: string;
+  readonly resourceKey: string;
+}): void {
+  assertValidForExecution(input.authorization, input.actionRequest.decisionId);
+  const expectedHash = computeActionRequestContentHash({
+    decisionId: input.actionRequest.decisionId,
+    action: input.actionRequest.action,
+    subject: input.actionRequest.subject,
+    metadata: input.actionRequest.metadata,
+  });
+  if (input.authorization.actionRequestContentHash !== expectedHash) {
+    throw new GovernanceError(
+      GovernanceErrorCode.AUTHORIZATION_BINDING_MISMATCH,
+      "authorization action request content hash mismatch",
+    );
+  }
+  if (input.authorization.actionRequestId !== input.actionRequest.id) {
+    throw new GovernanceError(
+      GovernanceErrorCode.AUTHORIZATION_BINDING_MISMATCH,
+      "authorization action request id mismatch",
+    );
+  }
+  if (input.authorization.resourceKey !== input.resourceKey) {
+    throw new GovernanceError(
+      GovernanceErrorCode.AUTHORIZATION_BINDING_MISMATCH,
+      "authorization resource binding mismatch",
+    );
+  }
+  if (input.authorization.executorActorId !== input.executorActorId) {
+    throw new GovernanceError(
+      GovernanceErrorCode.AUTHORIZATION_BINDING_MISMATCH,
+      "authorization executor binding mismatch",
+    );
+  }
+  if (input.actionRequest.action !== input.action) {
+    throw new GovernanceError(
+      GovernanceErrorCode.AUTHORIZATION_BINDING_MISMATCH,
+      "action request action mismatch",
+    );
+  }
+  if (
+    input.actionRequest.subject.id !== input.subject.id ||
+    input.actionRequest.subject.domain !== input.subject.domain
+  ) {
+    throw new GovernanceError(
+      GovernanceErrorCode.AUTHORIZATION_BINDING_MISMATCH,
+      "action request subject mismatch",
     );
   }
 }

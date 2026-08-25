@@ -104,6 +104,38 @@ export function evaluateRollbackReadiness(input: {
   return { ready: true, planId: input.plan.id };
 }
 
+export function verifyRollbackOutcome(input: {
+  readonly plan: RollbackPlan;
+  readonly status: "COMPLETED" | "FAILED" | "UNKNOWN";
+  readonly verificationResult?: { readonly kind: string; readonly actual: string };
+}): { readonly verified: true } | { readonly verified: false; readonly reason: string } {
+  if (input.status !== "COMPLETED") {
+    return {
+      verified: false,
+      reason: `rollback status is ${input.status}, not COMPLETED`,
+    };
+  }
+  if (!input.verificationResult) {
+    return {
+      verified: false,
+      reason: "rollback verification result is required",
+    };
+  }
+  if (input.verificationResult.kind !== input.plan.verification.kind) {
+    return {
+      verified: false,
+      reason: "rollback verification kind mismatch",
+    };
+  }
+  if (input.verificationResult.actual !== input.plan.verification.expected) {
+    return {
+      verified: false,
+      reason: `rollback verification expected ${input.plan.verification.expected}, got ${input.verificationResult.actual}`,
+    };
+  }
+  return { verified: true };
+}
+
 export function createRollbackExecution(input: {
   readonly id: string;
   readonly planId: string;

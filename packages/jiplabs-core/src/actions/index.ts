@@ -1,5 +1,6 @@
 import { GovernanceError, GovernanceErrorCode } from "../errors.js";
 import { envelope, freezeDeep, requireNonEmpty, requireIsoTimestamp } from "../envelope.js";
+import { sha256Canonical } from "../hash.js";
 import type { Decision } from "../decisions/index.js";
 import type {
   EntityEnvelope,
@@ -45,6 +46,20 @@ export type ActionResult = EntityEnvelope & {
   readonly resultRef?: string;
   readonly metadata?: JsonSafeMetadata;
 };
+
+export function computeActionRequestContentHash(input: {
+  readonly decisionId: string;
+  readonly action: string;
+  readonly subject: SubjectRef;
+  readonly metadata?: JsonSafeMetadata;
+}): string {
+  return sha256Canonical({
+    decisionId: input.decisionId,
+    action: input.action,
+    subject: input.subject,
+    metadata: input.metadata ?? null,
+  });
+}
 
 export function createActionRequest(input: {
   readonly id: string;

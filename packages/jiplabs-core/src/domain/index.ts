@@ -49,12 +49,31 @@ export type DomainActionExecutionRequest = {
   readonly decision: Decision;
   readonly action: string;
   readonly subjectId: string;
+  readonly executionAttemptId: string;
 };
 
 export type DomainActionExecutionResult = {
   readonly status: "EXECUTED" | "FAILED" | "BLOCKED";
   readonly resultRef?: string;
 };
+
+export type DomainExecutionReconciliationStatus =
+  | "EXECUTED"
+  | "NOT_EXECUTED"
+  | "UNKNOWN";
+
+/** Optional reconciliation for crash-gap recovery — CORE-01 only. */
+export interface DomainExecutionReconciler {
+  readonly domain: string;
+  reconcile(input: {
+    readonly executionAttemptId: string;
+    readonly decisionId: string;
+    readonly action: string;
+    readonly subjectId: string;
+  }):
+    | Promise<DomainExecutionReconciliationStatus>
+    | DomainExecutionReconciliationStatus;
+}
 
 /** CORE-01 runtime contract — not invoked by CORE-00 evaluation. */
 export interface DomainActionExecutor {
@@ -91,6 +110,7 @@ export type DomainGovernanceAdapter = {
 export type DomainAdapterBundle = DomainGovernanceAdapter & {
   readonly actionExecutor: DomainActionExecutor;
   readonly outcomeEvaluator: DomainOutcomeEvaluator;
+  readonly executionReconciler?: DomainExecutionReconciler;
 };
 
 export type EvaluateDomainDecisionAuthorizationInput = {

@@ -1,9 +1,10 @@
 import { GovernanceError, GovernanceErrorCode } from "../errors.js";
 import {
+  assertAuthorizationBinding,
   assertValidForExecution,
   type GovernedActionAuthorization,
 } from "../authorization/index.js";
-import { createActionResult, type ActionResult } from "../actions/index.js";
+import { createActionResult, type ActionRequest, type ActionResult } from "../actions/index.js";
 import type {
   DomainActionExecutionRequest,
   DomainActionExecutor,
@@ -14,14 +15,19 @@ import type { IsoTimestamp, Provenance, SubjectRef } from "../schema.js";
 export type GovernedExecutionInput = {
   readonly authorization: GovernedActionAuthorization;
   readonly decision: Decision;
+  readonly actionRequest: ActionRequest;
   readonly actionRequestId: string;
   readonly action: string;
   readonly subject: SubjectRef;
+  readonly resourceKey: string;
+  readonly executorActorId: string;
   readonly executor: DomainActionExecutor;
   readonly actionResultId: string;
+  readonly executionAttemptId: string;
   readonly at: IsoTimestamp;
   readonly provenance: Provenance;
   readonly alreadyExecuted?: boolean;
+  readonly reconciledResultRef?: string;
 };
 
 export type GovernedExecutionResult = {
@@ -33,6 +39,14 @@ export async function executeGovernedAction(
   input: GovernedExecutionInput,
 ): Promise<GovernedExecutionResult> {
   assertValidForExecution(input.authorization, input.decision.id);
+  assertAuthorizationBinding({
+    authorization: input.authorization,
+    actionRequest: input.actionRequest,
+    action: input.action,
+    subject: input.subject,
+    executorActorId: input.executorActorId,
+    resourceKey: input.resourceKey,
+  });
   if (input.alreadyExecuted) {
     throw new GovernanceError(
       GovernanceErrorCode.DUPLICATE_EXECUTION,
@@ -49,8 +63,11 @@ export async function executeGovernedAction(
     decision: input.decision,
     action: input.action,
     subjectId: input.subject.id,
+    executionAttemptId: input.executionAttemptId,
   };
-  const raw = await Promise.resolve(input.executor.execute(request));
+  const raw = input.reconciledResultRef
+    ? { status: "EXECUTED" as const, resultRef: input.reconciledResultRef }
+    : await Promise.resolve(input.executor.execute(request));
   const status =
     raw.status === "EXECUTED"
       ? ("EXECUTED" as const)
@@ -69,8 +86,9 @@ export async function executeGovernedAction(
     provenance: input.provenance,
     executedAt: input.at,
     resultRef: raw.resultRef,
+    metadata: { executionAttemptId: input.executionAttemptId },
   });
-  return { actionResult, executed: true };
+  return { actionResult, executed: !input.reconciledResultRef };
 }
 
 export function assertExecutorNotBypassed(

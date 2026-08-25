@@ -221,6 +221,13 @@ export function buildHarness(options: {
   return { kernel, ledger, input, adapter, actor, authority, grant, policyVersion };
 }
 
+export function verifiedRollbackOutcome(actual = "restored") {
+  return {
+    status: "COMPLETED" as const,
+    verificationResult: { kind: "state", actual },
+  };
+}
+
 export function rollbackPlan() {
   return createRollbackPlan({
     id: "rollback-plan-1",

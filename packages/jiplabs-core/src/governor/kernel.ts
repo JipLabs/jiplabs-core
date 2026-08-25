@@ -33,6 +33,7 @@ import type { PolicyVersion } from "../policies/index.js";
 import {
   createRollbackExecution,
   evaluateRollbackReadiness,
+  verifyRollbackOutcome,
   type RollbackPlan,
 } from "../rollback/index.js";
 import type { IsoTimestamp, JsonSafeMetadata, Provenance, ResourceRef } from "../schema.js";
@@ -61,6 +62,12 @@ import {
   emitProposalCreated,
   emitRollbackTriggered,
 } from "./ledger-events.js";
+import {
+  assertActionIdempotencyKey,
+  assertRollbackIdempotencyKey,
+  computeGovernanceRequestFingerprint,
+  computeRollbackRequestFingerprint,
+} from "./fingerprint.js";
 
 export type GovernorIds = {
   readonly runId: string;
@@ -122,6 +129,14 @@ export type HumanRejectionInput = {
   readonly provenance: Provenance;
 };
 
+export type RollbackExecutionOutcome = {
+  readonly status: "COMPLETED" | "FAILED" | "UNKNOWN";
+  readonly verificationResult?: {
+    readonly kind: string;
+    readonly actual: string;
+  };
+};
+
 export type RollbackExecutionInput = {
   readonly runId: string;
   readonly actorId: string;
@@ -130,9 +145,15 @@ export type RollbackExecutionInput = {
   readonly resource: ResourceRef;
   readonly rollbackPlan: RollbackPlan;
   readonly rollbackExecutionId: string;
+  readonly idempotencyKey?: string;
   readonly at: IsoTimestamp;
   readonly provenance: Provenance;
-  readonly executeRollback: (plan: RollbackPlan, decision: Decision) => Promise<{ status: "COMPLETED" | "FAILED" }> | { status: "COMPLETED" | "FAILED" };
+  readonly executeRollback: (
+    plan: RollbackPlan,
+    decision: Decision,
+  ) =>
+    | Promise<RollbackExecutionOutcome>
+    | RollbackExecutionOutcome;
 };
 
 export type GovernorKernelDeps = {
@@ -147,6 +168,46 @@ function resourceKey(resource: ResourceRef, subjectId: string): string {
     resource.resourceType ?? "*",
     resource.resourceId ?? subjectId,
   ].join("|");
+}
+
+function executionAttemptId(runId: string): string {
+  return `${runId}:attempt:1`;
+}
+
+function freshExecutionAuthority(input: {
+  readonly grant: AuthorityGrant | null | undefined;
+  readonly authority: Authority;
+  readonly scope: string;
+  readonly resource: ResourceRef;
+  readonly at: IsoTimestamp;
+}) {
+  if (!input.grant) {
+    return {
+      allowed: false as const,
+      grantId: "none",
+      message: "execution authority grant is missing",
+    };
+  }
+  return evaluateAuthorityGrant({
+    grant: input.grant,
+    authority: input.authority,
+    actorId: input.grant.actorId,
+    scope: input.scope,
+    resource: input.resource,
+    at: input.at,
+  });
+}
+
+function requestFingerprintForInput(input: GovernorRunInput, resource: string): string {
+  return computeGovernanceRequestFingerprint({
+    proposal: input.proposal,
+    policyContentHash: input.policyVersion.contentHash,
+    resourceKey: resource,
+    actorId: input.actor.id,
+    executorActorId: input.executorActorId,
+    evidenceRefs: input.evidence.map((item) => item.id),
+    rollbackPlanId: input.rollbackPlan?.id ?? null,
+  });
 }
 
 function withDecisionStatus(decision: Decision, status: Decision["status"]): Decision {
@@ -193,19 +254,36 @@ export class GovernorKernel {
   }
 
   async run(input: GovernorRunInput): Promise<GovernorRunResult> {
+    assertActionIdempotencyKey(input.idempotencyKey);
+    const resource = resourceKey(input.resource, input.proposal.subject.id);
+    const requestFingerprint = requestFingerprintForInput(input, resource);
+
     const existing = this.#runStore.getByIdempotencyKey(input.idempotencyKey);
     if (existing) {
+      const binding = this.#runStore.getIdempotencyBinding(input.idempotencyKey);
+      if (binding && binding.fingerprint !== requestFingerprint) {
+        return {
+          ok: false,
+          run: existing,
+          state: existing.state,
+          code: GovernanceErrorCode.IDEMPOTENCY_CONFLICT,
+          message: `idempotency key ${input.idempotencyKey} is bound to a different request fingerprint`,
+        };
+      }
       return {
-        ok: !["AUTHORITY_DENIED", "POLICY_BLOCKED", "BLOCKED", "ROLLBACK_FAILED"].includes(
-          existing.state,
-        ),
+        ok: ![
+          "AUTHORITY_DENIED",
+          "POLICY_BLOCKED",
+          "BLOCKED",
+          "ROLLBACK_FAILED",
+          "RECONCILIATION_REQUIRED",
+        ].includes(existing.state),
         run: existing,
         state: existing.state,
         disposition: existing.disposition,
       };
     }
 
-    const resource = resourceKey(input.resource, input.proposal.subject.id);
     const claimOk = this.#claims.tryAcquire({
       resourceKey: resource,
       runId: input.ids.runId,
@@ -218,6 +296,7 @@ export class GovernorKernel {
         createInitialRun({
           runId: input.ids.runId,
           idempotencyKey: input.idempotencyKey,
+          requestFingerprint,
           resourceKey: resource,
           domain: input.proposal.domain,
           at: input.at,
@@ -233,6 +312,7 @@ export class GovernorKernel {
     let run = createInitialRun({
       runId: input.ids.runId,
       idempotencyKey: input.idempotencyKey,
+      requestFingerprint,
       resourceKey: resource,
       domain: input.proposal.domain,
       at: input.at,
@@ -399,12 +479,31 @@ export class GovernorKernel {
       createdAt: input.at,
       provenance: input.provenance,
     });
+    const executionAuthority = freshExecutionAuthority({
+      grant: input.grant,
+      authority: input.authority,
+      scope: input.policyVersion.requiredAuthorityScope,
+      resource: input.resource,
+      at: input.at,
+    });
+    if (!executionAuthority.allowed) {
+      return {
+        ok: false,
+        run,
+        state: run.state,
+        code: GovernanceErrorCode.EXECUTION_AUTHORITY_STALE,
+        message: executionAuthority.message,
+      };
+    }
     const authorization = createGovernedActionAuthorization({
       id: input.authorizationId,
       decision: approvedDecision,
+      actionRequest,
       actionRequestId: actionRequest.id,
+      resourceKey: run.resourceKey,
       actorId: input.humanActorId,
-      executorActorId: input.humanActorId,
+      executorActorId: input.executorActorId,
+      authorityGrantContentHash: input.grant?.contentHash ?? "none",
       policyContentHash,
       rollbackReady,
       authorizedAt: input.at,
@@ -517,6 +616,21 @@ export class GovernorKernel {
         run.actionRequest,
       );
     }
+    if (
+      run.checkpoint === "ACTION_STARTED" &&
+      run.decision &&
+      run.actionAuthorization &&
+      run.actionRequest &&
+      !run.actionResult
+    ) {
+      return this.#executeFromAuthorization(
+        input,
+        run,
+        run.decision,
+        run.actionAuthorization,
+        run.actionRequest,
+      );
+    }
     if (run.checkpoint === "ACTION_COMPLETED" && run.actionResult && run.decision) {
       return this.#evaluateAndDispose(input, run, run.decision, run.actionResult);
     }
@@ -526,6 +640,39 @@ export class GovernorKernel {
   async executeRollback(input: RollbackExecutionInput): Promise<GovernorRunResult> {
     const run = this.#runStore.get(input.runId);
     if (!run?.decision) return this.#missingRun(input.runId);
+
+    const rollbackKey =
+      input.idempotencyKey ?? `rollback:${input.runId}:${input.rollbackPlan.id}`;
+    assertRollbackIdempotencyKey(rollbackKey);
+    const rollbackFingerprint = computeRollbackRequestFingerprint({
+      runId: input.runId,
+      decisionId: run.decision.id,
+      planId: input.rollbackPlan.id,
+      rollbackAction: input.rollbackPlan.rollbackAction,
+      rollbackTargetId: input.rollbackPlan.rollbackTarget.id,
+    });
+    const existingBinding = this.#runStore.getIdempotencyBinding(rollbackKey);
+    if (existingBinding && existingBinding.fingerprint !== rollbackFingerprint) {
+      return {
+        ok: false,
+        run,
+        state: run.state,
+        code: GovernanceErrorCode.IDEMPOTENCY_CONFLICT,
+        message: `rollback idempotency key ${rollbackKey} is bound to a different rollback fingerprint`,
+      };
+    }
+    if (
+      run.rollbackExecution?.status === "COMPLETED" &&
+      run.rollbackIdempotencyKey === rollbackKey
+    ) {
+      return {
+        ok: true,
+        run,
+        state: "ROLLBACK_COMPLETED",
+        disposition: run.disposition,
+      };
+    }
+
     const check = evaluateAuthorityGrant({
       grant: input.grant,
       authority: input.authority,
@@ -564,30 +711,55 @@ export class GovernorKernel {
       actorId: input.actorId,
       decisionId: run.decision.id,
       provenance: input.provenance,
-      idempotencyKey: run.idempotencyKey,
+      idempotencyKey: rollbackKey,
     });
 
     let next = transitionRun(run, "ROLLBACK_EXECUTING", input.at, {
       checkpoint: "ROLLBACK_STARTED",
+      rollbackIdempotencyKey: rollbackKey,
+      rollbackRequestFingerprint: rollbackFingerprint,
     });
+    this.#runStore.save(next);
+
     const result = await Promise.resolve(
       input.executeRollback(input.rollbackPlan, run.decision),
     );
+    const verification = verifyRollbackOutcome({
+      plan: input.rollbackPlan,
+      status: result.status,
+      verificationResult: result.verificationResult,
+    });
     const execution = createRollbackExecution({
       id: input.rollbackExecutionId,
       planId: input.rollbackPlan.id,
       decisionId: run.decision.id,
-      status: result.status === "COMPLETED" ? "COMPLETED" : "FAILED",
+      status:
+        verification.verified && result.status === "COMPLETED"
+          ? "COMPLETED"
+          : "FAILED",
       createdAt: input.at,
       provenance: input.provenance,
       executedAt: input.at,
     });
-    next = transitionRun(
-      next,
-      result.status === "COMPLETED" ? "ROLLBACK_COMPLETED" : "ROLLBACK_FAILED",
-      input.at,
-      { rollbackExecution: execution },
-    );
+    if (!verification.verified) {
+      next = transitionRun(next, "ROLLBACK_FAILED", input.at, {
+        rollbackExecution: execution,
+      });
+      this.#runStore.save(next);
+      return {
+        ok: false,
+        run: next,
+        state: "ROLLBACK_FAILED",
+        code:
+          result.status === "UNKNOWN"
+            ? GovernanceErrorCode.RECONCILIATION_REQUIRED
+            : GovernanceErrorCode.ROLLBACK_VERIFICATION_FAILED,
+        message: verification.reason,
+      };
+    }
+    next = transitionRun(next, "ROLLBACK_COMPLETED", input.at, {
+      rollbackExecution: execution,
+    });
     return this.#save(next, next.state, input.at);
   }
 
@@ -596,6 +768,23 @@ export class GovernorKernel {
     run: GovernanceRun,
     decision: Decision,
   ): Promise<GovernorRunResult> {
+    const executionAuthority = freshExecutionAuthority({
+      grant: input.grant,
+      authority: input.authority,
+      scope: input.policyVersion.requiredAuthorityScope,
+      resource: input.resource,
+      at: input.at,
+    });
+    if (!executionAuthority.allowed) {
+      return this.#fail(
+        run,
+        "BLOCKED",
+        input.at,
+        GovernanceErrorCode.EXECUTION_AUTHORITY_STALE,
+        executionAuthority.message,
+      );
+    }
+
     const rollbackReady =
       !decision.rollbackRequired ||
       evaluateRollbackReadiness({
@@ -617,9 +806,12 @@ export class GovernorKernel {
     const authorization = createGovernedActionAuthorization({
       id: input.ids.authorizationId,
       decision,
+      actionRequest,
       actionRequestId: actionRequest.id,
+      resourceKey: run.resourceKey,
       actorId: input.actor.id,
       executorActorId: input.executorActorId,
+      authorityGrantContentHash: input.grant?.contentHash ?? "none",
       policyContentHash: input.policyVersion.contentHash,
       rollbackReady,
       authorizedAt: input.at,
@@ -661,21 +853,89 @@ export class GovernorKernel {
       return this.#evaluateAndDispose(input, run, decision, run.actionResult);
     }
 
+    const executionAuthority = freshExecutionAuthority({
+      grant: input.grant,
+      authority: input.authority,
+      scope: input.policyVersion.requiredAuthorityScope,
+      resource: input.resource,
+      at: input.at,
+    });
+    if (!executionAuthority.allowed) {
+      return this.#fail(
+        run,
+        "BLOCKED",
+        input.at,
+        GovernanceErrorCode.EXECUTION_AUTHORITY_STALE,
+        executionAuthority.message,
+      );
+    }
+
+    const attemptId = run.executionAttempt?.attemptId ?? executionAttemptId(run.runId);
+    let reconciledResultRef: string | undefined;
+
+    if (run.executionAttempt?.status === "STARTED") {
+      const reconciler = input.adapter.executionReconciler;
+      if (!reconciler) {
+        return this.#fail(
+          run,
+          "RECONCILIATION_REQUIRED",
+          input.at,
+          GovernanceErrorCode.RECONCILIATION_REQUIRED,
+          "execution started but completion is unknown; reconciliation required",
+        );
+      }
+      const reconciliation = await Promise.resolve(
+        reconciler.reconcile({
+          executionAttemptId: attemptId,
+          decisionId: decision.id,
+          action: input.proposal.action,
+          subjectId: input.proposal.subject.id,
+        }),
+      );
+      if (reconciliation === "UNKNOWN") {
+        return this.#fail(
+          run,
+          "RECONCILIATION_REQUIRED",
+          input.at,
+          GovernanceErrorCode.RECONCILIATION_REQUIRED,
+          "external execution effect is unknown; reconciliation required",
+        );
+      }
+      if (reconciliation === "EXECUTED") {
+        reconciledResultRef =
+          run.executionAttempt.resultRef ?? `${attemptId}:reconciled`;
+      }
+    }
+
     run = transitionRun(run, "ACTION_EXECUTING", input.at, {
       checkpoint: "ACTION_STARTED",
+      executionAttempt: {
+        attemptId,
+        startedAt: run.executionAttempt?.startedAt ?? input.at,
+        status: reconciledResultRef ? "COMPLETED" : "STARTED",
+        ...(reconciledResultRef ? { resultRef: reconciledResultRef } : {}),
+      },
     });
+    if (!reconciledResultRef) {
+      this.#runStore.save(run);
+    }
 
     const execution = await executeGovernedAction({
       authorization,
       decision,
+      actionRequest,
       actionRequestId: actionRequest.id,
       action: input.proposal.action,
       subject: input.proposal.subject,
+      resourceKey: run.resourceKey,
+      executorActorId: input.executorActorId,
       executor: input.adapter.actionExecutor,
       actionResultId: input.ids.actionResultId,
+      executionAttemptId: attemptId,
       at: input.at,
       provenance: input.provenance,
       alreadyExecuted: Boolean(run.actionResult),
+      reconciledResultRef,
     });
 
     const success = execution.actionResult.status === "EXECUTED";
@@ -686,6 +946,12 @@ export class GovernorKernel {
       {
         actionResult: execution.actionResult,
         checkpoint: "ACTION_COMPLETED",
+        executionAttempt: {
+          attemptId,
+          startedAt: run.executionAttempt?.startedAt ?? input.at,
+          status: "COMPLETED",
+          resultRef: execution.actionResult.resultRef,
+        },
       },
     );
     emitActionExecuted(this.#ledger, {
@@ -811,6 +1077,7 @@ export class GovernorKernel {
         "BLOCKED",
         "ROLLBACK_FAILED",
         "ACTION_FAILED",
+        "RECONCILIATION_REQUIRED",
       ].includes(state),
       run: finalRun,
       state,
@@ -837,6 +1104,7 @@ export class GovernorKernel {
       run: freezeDeep({
         runId,
         idempotencyKey: "",
+        requestFingerprint: "",
         state: "BLOCKED",
         checkpoint: null,
         resourceKey: "",

@@ -97,6 +97,7 @@ export {
 
 export {
   authorizeAction,
+  computeActionRequestContentHash,
   createActionRequest,
   createActionResult,
   type ActionAuthorization,
@@ -118,6 +119,7 @@ export {
   createRollbackExecution,
   createRollbackPlan,
   evaluateRollbackReadiness,
+  verifyRollbackOutcome,
   type RollbackCompensation,
   type RollbackExecution,
   type RollbackExecutionStatus,
@@ -172,6 +174,8 @@ export {
   type DomainActionExecutor,
   type DomainAdapterBundle,
   type DomainEvidenceProvider,
+  type DomainExecutionReconciliationStatus,
+  type DomainExecutionReconciler,
   type DomainGovernanceAdapter,
   type DomainObservation,
   type DomainObservationProvider,
@@ -198,15 +202,21 @@ export {
   type HumanApprovalInput,
   type HumanRejectionInput,
   type RollbackExecutionInput,
+  type RollbackExecutionOutcome,
   type GovernanceRun,
   type GovernanceRunStore,
   type KernelState,
   type RecoveryCheckpoint,
+  type ExecutionAttempt,
+  computeGovernanceRequestFingerprint,
+  computeRollbackRequestFingerprint,
+  ROLLBACK_IDEMPOTENCY_PREFIX,
 } from "./governor/index.js";
 
 export {
   createGovernedActionAuthorization,
   assertValidForExecution,
+  assertAuthorizationBinding,
   type GovernedActionAuthorization,
 } from "./authorization/index.js";
 

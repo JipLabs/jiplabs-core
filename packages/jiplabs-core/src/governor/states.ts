@@ -19,6 +19,7 @@ export type KernelState =
   | "ROLLBACK_EXECUTING"
   | "ROLLBACK_COMPLETED"
   | "ROLLBACK_FAILED"
+  | "RECONCILIATION_REQUIRED"
   | "BLOCKED";
 
 const TRANSITIONS: Readonly<Record<KernelState, readonly KernelState[]>> = {
@@ -39,7 +40,7 @@ const TRANSITIONS: Readonly<Record<KernelState, readonly KernelState[]>> = {
     "KEEP",
   ],
   ACTION_AUTHORIZED: ["ACTION_EXECUTING", "BLOCKED"],
-  ACTION_EXECUTING: ["ACTION_SUCCEEDED", "ACTION_FAILED", "BLOCKED"],
+  ACTION_EXECUTING: ["ACTION_SUCCEEDED", "ACTION_FAILED", "BLOCKED", "RECONCILIATION_REQUIRED"],
   ACTION_SUCCEEDED: ["OUTCOME_RECORDED"],
   ACTION_FAILED: ["OUTCOME_RECORDED"],
   OUTCOME_RECORDED: ["EVALUATING"],
@@ -56,6 +57,7 @@ const TRANSITIONS: Readonly<Record<KernelState, readonly KernelState[]>> = {
   ROLLBACK_EXECUTING: ["ROLLBACK_COMPLETED", "ROLLBACK_FAILED"],
   ROLLBACK_COMPLETED: [],
   ROLLBACK_FAILED: [],
+  RECONCILIATION_REQUIRED: [],
   BLOCKED: [],
 };
 
@@ -99,6 +101,8 @@ export function checkpointForState(state: KernelState): RecoveryCheckpoint | nul
       return "EVALUATION_COMPLETED";
     case "ROLLBACK_EXECUTING":
       return "ROLLBACK_STARTED";
+    case "RECONCILIATION_REQUIRED":
+      return "ACTION_STARTED";
     default:
       return null;
   }

@@ -8,6 +8,7 @@ export {
   type HumanApprovalInput,
   type HumanRejectionInput,
   type RollbackExecutionInput,
+  type RollbackExecutionOutcome,
 } from "./kernel.js";
 export {
   canTransition,
@@ -22,4 +23,13 @@ export {
   InMemoryGovernanceRunStore,
   type GovernanceRun,
   type GovernanceRunStore,
+  type ExecutionAttempt,
+  type IdempotencyBinding,
 } from "./runtime-state.js";
+export {
+  computeGovernanceRequestFingerprint,
+  computeRollbackRequestFingerprint,
+  assertActionIdempotencyKey,
+  assertRollbackIdempotencyKey,
+  ROLLBACK_IDEMPOTENCY_PREFIX,
+} from "./fingerprint.js";
