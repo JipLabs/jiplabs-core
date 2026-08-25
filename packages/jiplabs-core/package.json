@@ -1,8 +1,8 @@
 {
   "name": "@jiplabs/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
-  "description": "Governance kernel for governed autonomous systems — authority, policy, evidence, decisions, execution authorization, audit, rollback and durable recovery.",
+  "description": "Governance kernel for governed autonomous systems — authority, policy, evidence, decisions, execution authorization, audit, rollback, durable recovery and evaluation corpus.",
   "license": "MIT",
   "author": "JipLabs LLC",
   "homepage": "https://jiplabs.com",
@@ -23,6 +23,8 @@
     "decisions",
     "rollback",
     "audit",
+    "evaluation",
+    "regression",
     "jiplabs"
   ],
   "type": "module",

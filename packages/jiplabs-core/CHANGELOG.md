@@ -15,6 +15,34 @@ Until **1.0.0**:
 
 After **1.0.0**, accidental breaking changes are unacceptable.
 
+## 0.2.0 — 2026-08-25
+
+Adds CORE-03 — Evaluation Corpus & Governed Learning Loop on top of the 0.1.0 public API.
+
+### Added
+
+- Permanent evaluation corpus with case candidate/admission/version lifecycle
+- Immutable evaluation suite versions
+- Evaluation targets and observational evaluation runs
+- Deterministic summaries and basic metrics aggregation
+- Evaluation baselines and regression comparison
+- Learning signals (evidence) and governance recommendations (non-decisions)
+- SQLite persistence migration `002_evaluation_corpus`
+- Restart-safe evaluation history via `corpusStore` on `openNodeSqliteGovernanceStorage`
+
+### Safety
+
+- Pure evaluation runs cannot invoke production `DomainActionExecutor`
+- Governance recommendations are not decisions and do not authorize execution
+- No automatic policy or authority mutation
+- Activated case/suite versions and baselines remain immutable; supersession preserves history
+
+### Compatibility
+
+- **0.1.0 public API preserved** — all existing exports remain available
+- New CORE-03 exports are additive only
+- Databases at schema 001 upgrade to 002 on first open with 0.2.0
+
 ## 0.1.0 — 2026-08-25
 
 First official consumable release of the JipLabs governance kernel.

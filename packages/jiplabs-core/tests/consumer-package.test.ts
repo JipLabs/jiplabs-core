@@ -59,6 +59,10 @@ import {
   InMemoryExecutionClaimStore,
   InMemoryGovernanceLedger,
   InMemoryGovernanceRunStore,
+  EvaluationCorpus,
+  InMemoryEvaluationCorpusStore,
+  createEvaluationCaseCandidate,
+  openNodeSqliteGovernanceStorage,
 } from "@jiplabs/core";
 
 const AT = "2026-08-25T12:00:00.000Z";
@@ -211,7 +215,32 @@ const result = await kernel.run({
   provenance,
 });
 
-console.log(JSON.stringify({ ok: result.ok, state: result.state }));
+console.log(JSON.stringify({
+  ok: result.ok,
+  state: result.state,
+  corpus: typeof EvaluationCorpus === "function",
+  sqlite: typeof openNodeSqliteGovernanceStorage === "function",
+  corpusCandidate: (() => {
+    const corpus = new EvaluationCorpus({
+      store: new InMemoryEvaluationCorpusStore(),
+      at: AT,
+      provenance,
+    });
+    const candidate = createEvaluationCaseCandidate({
+      id: "cc-1",
+      candidateId: "cc-1",
+      domain: "consumer-domain",
+      title: "Consumer corpus case",
+      provenance: { sourceKind: "MANUAL_REFERENCE" },
+      inputContextRefs: [],
+      evidenceRefs: [],
+      createdAt: AT,
+      provenanceEnvelope: provenance,
+    });
+    corpus.addCandidate(candidate);
+    return corpus.getCandidate("cc-1")?.candidateId === "cc-1";
+  })(),
+}));
 `,
     );
 
@@ -225,11 +254,17 @@ console.log(JSON.stringify({ ok: result.ok, state: result.state }));
 }
 
 describe("consumer package (packed artifact)", () => {
-  it("resolves public imports from npm pack tarball and runs a minimal governed decision", () => {
+  it("resolves public imports from npm pack tarball and runs a minimal governed decision", { timeout: 60000 }, () => {
     const { tarballPath } = buildTarball();
     try {
       const output = installAndRunConsumer(tarballPath);
-      expect(JSON.parse(output)).toEqual({ ok: true, state: "KEEP" });
+      expect(JSON.parse(output)).toEqual({
+        ok: true,
+        state: "KEEP",
+        corpus: true,
+        sqlite: true,
+        corpusCandidate: true,
+      });
     } finally {
       rmSync(tarballPath, { force: true });
     }
@@ -256,9 +291,15 @@ describe("consumer package (packed artifact)", () => {
   });
 
   it("contains no embedded secrets in published metadata", () => {
-    const pkg = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
-    const serialized = JSON.stringify(pkg);
-    expect(serialized).not.toMatch(/api[_-]?key|secret|token|password|Bearer /i);
-    expect(serialized).not.toMatch(/sk-[a-zA-Z0-9]{10,}/);
+    const { tarballPath, tarballContents } = buildTarball();
+    try {
+      const pkg = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+      const serialized = JSON.stringify(pkg);
+      expect(serialized).not.toMatch(/api[_-]?key|secret|token|password|Bearer /i);
+      expect(serialized).not.toMatch(/sk-[a-zA-Z0-9]{10,}/);
+      expect(tarballContents).not.toMatch(/C:\\\\Users\\\\Admin/i);
+    } finally {
+      rmSync(tarballPath, { force: true });
+    }
   });
 });

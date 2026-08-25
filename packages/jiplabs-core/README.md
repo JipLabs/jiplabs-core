@@ -2,7 +2,7 @@
 
 Governance kernel for governed autonomous systems.
 
-**Status:** 0.1.0 · **License:** MIT · **Node:** >=22.5.0
+**Status:** 0.2.0 · **License:** MIT · **Node:** >=22.5.0
 
 This package is domain-agnostic. JipComply, Quinté Lab, and future JipLabs products consume it through adapters; the package itself contains **no** product-specific domain logic.
 
@@ -24,6 +24,8 @@ Proposal
   → Disposition / Rollback
 ```
 
+Operational failures can become permanent evaluation cases through the CORE-03 evaluation corpus (see below).
+
 ### Core principles
 
 - Authority is explicit — no implicit global power.
@@ -40,12 +42,26 @@ Proposal
 
 | Milestone | Scope |
 |---|---|
-| **CORE-00** | Governance constitution — contracts for actors, authority, policies, evidence, decisions, rollback, override, ledger, trace |
+| **CORE-00** | Governance constitution — actors, authority, policies, evidence, decisions, rollback, override, ledger, trace |
 | **CORE-01** | Governor Kernel — operational runtime, action authorization, human approval, rollback execution, idempotency, recovery |
 | **CORE-02** | Durable governance state — SQLite persistence, restart recovery, replay, reconciliation, integrity verification, migrations |
-| **CORE-03** | Evaluation corpus — case admission, suites, baselines, regression detection, learning signals, governance recommendations |
+| **CORE-03** | Evaluation corpus — permanent evaluation cases, versioned suites, targets/runs, baselines, regression comparison, learning signals, governance recommendations |
 
 CORE-04 and beyond are not included in this release.
+
+### CORE-03 — Evaluation Corpus
+
+CORE-03 converts operational outcomes into durable, versioned evaluation knowledge:
+
+- **Permanent evaluation cases** — admitted from candidates with provenance preserved
+- **Versioned evaluation suites** — immutable once activated
+- **Evaluation targets and runs** — observational mode only
+- **Baselines** — immutable reference runs for comparison
+- **Regression comparison** — deterministic IMPROVED / UNCHANGED / REGRESSED / INCOMPARABLE assessments
+- **Learning signals** — structured evidence (e.g. regression detected)
+- **Governance recommendations** — guidance such as investigate or expand coverage
+
+Learning signals and governance recommendations **do not** automatically rewrite policies, authority grants, or production behavior. They are inputs to governed decision paths — not self-modification.
 
 ## Install
 
@@ -53,7 +69,7 @@ CORE-04 and beyond are not included in this release.
 npm install @jiplabs/core
 ```
 
-## Minimal usage
+## Minimal usage (Governor Kernel)
 
 Domain-agnostic example showing actor, authority grant, policy, proposal, evidence, kernel, domain executor, and outcome evaluator:
 
@@ -170,18 +186,9 @@ const proposal = createDecisionProposal({
 
 const adapter: DomainAdapterBundle = {
   domain: "example-domain",
-  observationProvider: {
-    domain: "example-domain",
-    fetchObservations: () => [],
-  },
-  policyProvider: {
-    domain: "example-domain",
-    resolvePolicyVersion: () => policyVersion,
-  },
-  evidenceProvider: {
-    domain: "example-domain",
-    collectEvidence: () => evidence,
-  },
+  observationProvider: { domain: "example-domain", fetchObservations: () => [] },
+  policyProvider: { domain: "example-domain", resolvePolicyVersion: () => policyVersion },
+  evidenceProvider: { domain: "example-domain", collectEvidence: () => evidence },
   actionExecutor: {
     domain: "example-domain",
     execute: async () => ({ status: "EXECUTED", resultRef: "result-1" }),
@@ -192,9 +199,7 @@ const adapter: DomainAdapterBundle = {
   },
 };
 
-const kernel = new GovernorKernel({
-  ledger: new InMemoryGovernanceLedger(),
-});
+const kernel = new GovernorKernel({ ledger: new InMemoryGovernanceLedger() });
 
 const result = await kernel.run({
   idempotencyKey: "idem-1",
@@ -225,9 +230,42 @@ const result = await kernel.run({
 console.log(result.state, result.ok);
 ```
 
-For durable persistence across restarts, use `openNodeSqliteGovernanceStorage` (Node >=22.5 with `node:sqlite`).
+## Minimal usage (Evaluation Corpus)
 
-## Public API (0.1.0)
+```typescript
+import {
+  EvaluationCorpus,
+  InMemoryEvaluationCorpusStore,
+  createEvaluationCaseCandidate,
+} from "@jiplabs/core";
+
+const AT = new Date().toISOString();
+const provenance = { actorId: "evaluator", source: "example" };
+
+const corpus = new EvaluationCorpus({
+  store: new InMemoryEvaluationCorpusStore(),
+  at: AT,
+  provenance,
+});
+
+corpus.addCandidate(
+  createEvaluationCaseCandidate({
+    id: "cand-1",
+    candidateId: "cand-1",
+    domain: "example-domain",
+    title: "Reference failure case",
+    provenance: { sourceKind: "MANUAL_REFERENCE" },
+    inputContextRefs: [],
+    evidenceRefs: [],
+    createdAt: AT,
+    provenanceEnvelope: provenance,
+  }),
+);
+```
+
+For durable persistence across restarts, use `openNodeSqliteGovernanceStorage` (Node >=22.5 with `node:sqlite`). The returned bundle includes `corpusStore` for evaluation history (schema migration 002).
+
+## Public API
 
 | Area | Exports |
 |---|---|
@@ -237,6 +275,7 @@ For durable persistence across restarts, use `openNodeSqliteGovernanceStorage` (
 | Authorization & execution | `GovernedActionAuthorization`, `executeGovernedAction`, binding assertions |
 | Domain adapters | `DomainAdapterBundle` and related port interfaces |
 | Durable state | `openNodeSqliteGovernanceStorage`, replay, integrity verification, reconstruction |
+| Evaluation corpus | `EvaluationCorpus`, case admission, suites, baselines, regression, learning signals |
 
 Import only from `@jiplabs/core`. Deep imports into `dist/` subpaths are not part of the supported contract.
 
@@ -244,8 +283,9 @@ Import only from `@jiplabs/core`. Deep imports into `dist/` subpaths are not par
 
 - Product-specific compliance or domain rule packs
 - LLM reasoning or external service orchestration
+- Automatic policy or authority mutation from learning signals
+- Agent/model routing (CORE-04)
 - Control plane or SaaS API
-- CORE-03+ capabilities not yet implemented
 
 ## Compatibility
 
