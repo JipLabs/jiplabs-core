@@ -2,7 +2,7 @@
 
 Governance kernel for governed autonomous systems.
 
-**Status:** 0.2.0 · **License:** MIT · **Node:** >=22.5.0
+**Status:** 0.3.0 · **License:** MIT · **Node:** >=22.5.0
 
 This package is domain-agnostic. JipComply, Quinté Lab, and future JipLabs products consume it through adapters; the package itself contains **no** product-specific domain logic.
 
@@ -76,6 +76,13 @@ CORE-04 governs which agents, models, and other intelligence components may rece
 - **Component selection & fallback** — policy-driven, provider-neutral
 
 Capability claims, qualifications, and recommendations **do not** automatically grant authority or assign responsibility. Assignment requires explicit authority and policy. Regression signals may propose demotion but cannot bypass governance.
+
+> **Identity is not authority.**  
+> **Capability is not qualification.**  
+> **Qualification is not assignment.**  
+> **Assignment is not action authorization.**
+
+Core does not call or depend on any specific LLM provider.
 
 ## Install
 

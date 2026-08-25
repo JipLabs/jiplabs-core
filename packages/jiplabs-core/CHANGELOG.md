@@ -15,6 +15,40 @@ Until **1.0.0**:
 
 After **1.0.0**, accidental breaking changes are unacceptable.
 
+## 0.3.0 — 2026-08-25
+
+Adds CORE-04 — Agent, Model & Responsibility Governance on top of the 0.2.0 public API.
+
+### Added
+
+- Governed component registry with agent/model identities
+- Extensible capability declarations
+- Responsibilities and evidence-backed qualifications
+- Deterministic responsibility eligibility evaluation
+- Governed responsibility assignments with canary/probation/shadow modes
+- Component selection among eligible candidates
+- Validator independence contracts
+- Suspension, requalification, replacement and fallback governance
+- SQLite persistence migration `003_component_governance`
+- Component governance ledger and decision trace integration
+
+### Safety
+
+- Identity does not grant authority
+- Capability declaration does not grant qualification
+- Qualification does not auto-assign responsibility
+- Responsibility assignment does not authorize production execution
+- Regression recommendations do not directly demote components
+- Fallback must itself be qualified and eligible
+- Historical component governance state remains reconstructable
+- Provider-neutral implementation — no LLM SDK dependency
+
+### Compatibility
+
+- **0.2.0 public API preserved** — all existing exports remain available
+- New CORE-04 exports are additive only
+- Databases at schema 002 upgrade to 003 on first open with 0.3.0
+
 ## 0.2.0 — 2026-08-25
 
 Adds CORE-03 — Evaluation Corpus & Governed Learning Loop on top of the 0.1.0 public API.

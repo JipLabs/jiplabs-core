@@ -62,6 +62,13 @@ import {
   EvaluationCorpus,
   InMemoryEvaluationCorpusStore,
   createEvaluationCaseCandidate,
+  GovernedComponentRegistry,
+  InMemoryGovernedComponentRegistryStore,
+  createAgentIdentity,
+  createCapabilityDeclaration,
+  createQualificationRecord,
+  createResponsibility,
+  evaluateResponsibilityEligibility,
   openNodeSqliteGovernanceStorage,
 } from "@jiplabs/core";
 
@@ -240,6 +247,59 @@ console.log(JSON.stringify({
     corpus.addCandidate(candidate);
     return corpus.getCandidate("cc-1")?.candidateId === "cc-1";
   })(),
+  componentRegistry: typeof GovernedComponentRegistry === "function",
+  componentWorkflow: (() => {
+    const store = new InMemoryGovernedComponentRegistryStore();
+    const registry = new GovernedComponentRegistry({ store, at: AT, provenance });
+    const agent = createAgentIdentity({
+      id: "agent-1:1.0.0",
+      componentId: "agent-1",
+      version: "1.0.0",
+      createdAt: AT,
+      provenance,
+      status: "ACTIVE",
+    });
+    registry.registerComponent({ component: agent });
+    registry.declareCapability({
+      declaration: createCapabilityDeclaration({
+        id: "cap-1",
+        declarationId: "cap-1",
+        componentId: agent.componentId,
+        componentVersion: agent.version,
+        capabilityId: "generic:reason",
+        createdAt: AT,
+        provenance,
+      }),
+    });
+    registry.defineResponsibility(createResponsibility({
+      id: "resp-1",
+      responsibilityId: "resp-1",
+      requiredCapabilities: ["generic:reason"],
+      effectiveFrom: AT,
+      createdAt: AT,
+      provenance,
+    }));
+    registry.recordQualification({
+      record: createQualificationRecord({
+        id: "qual-1",
+        qualificationId: "qual-1",
+        componentId: agent.componentId,
+        componentVersion: agent.version,
+        status: "QUALIFIED",
+        evidenceRefs: ["ev-qual"],
+        validFrom: AT,
+        createdAt: AT,
+        provenance,
+      }),
+    });
+    const elig = registry.evaluateEligibility({
+      eligibilityId: "elig-1",
+      componentId: agent.componentId,
+      componentVersion: agent.version,
+      responsibilityId: "resp-1",
+    });
+    return elig.outcome === "ELIGIBLE" && typeof evaluateResponsibilityEligibility === "function";
+  })(),
 }));
 `,
     );
@@ -264,6 +324,8 @@ describe("consumer package (packed artifact)", () => {
         corpus: true,
         sqlite: true,
         corpusCandidate: true,
+        componentRegistry: true,
+        componentWorkflow: true,
       });
     } finally {
       rmSync(tarballPath, { force: true });
