@@ -1,0 +1,14 @@
+{
+  "name": "jiplabs-core",
+  "private": true,
+  "description": "JipLabs Core — governed autonomy constitution and contracts (CORE-00).",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "pnpm --filter @jiplabs/core test",
+    "build": "pnpm --filter @jiplabs/core build",
+    "lint": "pnpm --filter @jiplabs/core lint"
+  }
+}
