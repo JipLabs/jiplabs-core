@@ -20,6 +20,7 @@ export interface GovernanceStorageBundle {
   readonly attemptStore: ExecutionAttemptStore;
   readonly unitOfWork: GovernanceUnitOfWork;
   readonly corpusStore?: import("../evaluation-corpus/contracts.js").EvaluationCorpusStore;
+  readonly componentStore?: import("../component-governance/contracts.js").GovernedComponentRegistryStore;
   close(): void;
 }
 

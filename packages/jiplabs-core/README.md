@@ -46,8 +46,9 @@ Operational failures can become permanent evaluation cases through the CORE-03 e
 | **CORE-01** | Governor Kernel — operational runtime, action authorization, human approval, rollback execution, idempotency, recovery |
 | **CORE-02** | Durable governance state — SQLite persistence, restart recovery, replay, reconciliation, integrity verification, migrations |
 | **CORE-03** | Evaluation corpus — permanent evaluation cases, versioned suites, targets/runs, baselines, regression comparison, learning signals, governance recommendations |
+| **CORE-04** | Agent, model & responsibility governance — governed components, capability declarations, qualification, eligibility, responsibility assignment, selection/fallback |
 
-CORE-04 and beyond are not included in this release.
+CORE-05 and beyond are not included in this release.
 
 ### CORE-03 — Evaluation Corpus
 
@@ -62,6 +63,19 @@ CORE-03 converts operational outcomes into durable, versioned evaluation knowled
 - **Governance recommendations** — guidance such as investigate or expand coverage
 
 Learning signals and governance recommendations **do not** automatically rewrite policies, authority grants, or production behavior. They are inputs to governed decision paths — not self-modification.
+
+### CORE-04 — Agent, Model & Responsibility Governance
+
+CORE-04 governs which agents, models, and other intelligence components may receive which responsibilities:
+
+- **GovernedComponent** — generic abstraction (AGENT, MODEL, RULE_ENGINE, …)
+- **CapabilityDeclaration** — namespaced capability claims (not authority)
+- **QualificationRecord** — evidence-backed qualification (consumes CORE-03 evaluation evidence)
+- **ResponsibilityEligibility** — deterministic eligibility evaluation
+- **ResponsibilityAssignment** — governed assignment (separate from execution)
+- **Component selection & fallback** — policy-driven, provider-neutral
+
+Capability claims, qualifications, and recommendations **do not** automatically grant authority or assign responsibility. Assignment requires explicit authority and policy. Regression signals may propose demotion but cannot bypass governance.
 
 ## Install
 

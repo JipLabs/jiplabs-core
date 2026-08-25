@@ -9,6 +9,7 @@ import type {
 } from "../../governor/runtime-state.js";
 import { deserializeGovernanceRecord, hashGovernanceRecord, serializeGovernanceRecord } from "../serialization.js";
 import { SqliteEvaluationCorpusStore } from "../evaluation-corpus-store.js";
+import { SqliteGovernedComponentRegistryStore } from "../component-governance-store.js";
 import type { ExecutionAttemptStore, GovernanceStorageBundle, GovernanceUnitOfWork } from "../interfaces.js";
 import { applyMigrations, type MigrationApplier } from "../migrations.js";
 import { sha256Canonical } from "../../hash.js";
@@ -460,6 +461,7 @@ export class SqliteGovernanceStorage implements GovernanceStorageBundle {
   readonly attemptStore: SqliteExecutionAttemptStore;
   readonly unitOfWork: SqliteUnitOfWork;
   readonly corpusStore: SqliteEvaluationCorpusStore;
+  readonly componentStore: SqliteGovernedComponentRegistryStore;
   readonly #db: SqliteDatabase;
 
   constructor(db: SqliteDatabase) {
@@ -470,6 +472,7 @@ export class SqliteGovernanceStorage implements GovernanceStorageBundle {
     this.claimStore = new SqliteExecutionClaimStore(db);
     this.attemptStore = new SqliteExecutionAttemptStore(db);
     this.corpusStore = new SqliteEvaluationCorpusStore(db);
+    this.componentStore = new SqliteGovernedComponentRegistryStore(db);
   }
 
   close(): void {

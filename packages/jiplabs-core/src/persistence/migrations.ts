@@ -95,9 +95,27 @@ export const MIGRATION_002_EVALUATION_CORPUS: Migration = {
   ],
 };
 
+export const MIGRATION_003_COMPONENT_GOVERNANCE: Migration = {
+  id: "003_component_governance",
+  checksum: sha256Hex("003_component_governance"),
+  sql: [
+    `CREATE TABLE IF NOT EXISTS component_governance_entities (
+      kind TEXT NOT NULL,
+      primary_key TEXT NOT NULL,
+      secondary_key TEXT NOT NULL DEFAULT '',
+      fingerprint TEXT,
+      record_json TEXT NOT NULL,
+      PRIMARY KEY (kind, primary_key, secondary_key)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_component_gov_fingerprint ON component_governance_entities(fingerprint)`,
+    `CREATE INDEX IF NOT EXISTS idx_component_gov_kind ON component_governance_entities(kind)`,
+  ],
+};
+
 export const ALL_MIGRATIONS: readonly Migration[] = [
   MIGRATION_001_INITIAL,
   MIGRATION_002_EVALUATION_CORPUS,
+  MIGRATION_003_COMPONENT_GOVERNANCE,
 ];
 
 export type MigrationApplier = {

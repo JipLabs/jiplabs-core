@@ -236,6 +236,7 @@ describe("CORE-REL-01 release audit", () => {
 
       const upgraded = openNodeSqliteGovernanceStorage({ path: dbPath, appliedAt: AT });
       expect(upgraded.corpusStore).toBeDefined();
+      expect(upgraded.componentStore).toBeDefined();
       upgraded.ledger.append({
         eventId: "evt-after-upgrade",
         eventType: "PROPOSAL_CREATED",
@@ -288,8 +289,12 @@ describe("CORE-REL-01 release audit", () => {
     }
   });
 
-  it("migration list includes 002 after 001 unchanged", () => {
-    expect(ALL_MIGRATIONS.map((m) => m.id)).toEqual(["001_initial", "002_evaluation_corpus"]);
-    expect(PERSISTENCE_SCHEMA_VERSION).toBe(2);
+  it("migration list includes 003 after 001/002 unchanged", () => {
+    expect(ALL_MIGRATIONS.map((m) => m.id)).toEqual([
+      "001_initial",
+      "002_evaluation_corpus",
+      "003_component_governance",
+    ]);
+    expect(PERSISTENCE_SCHEMA_VERSION).toBe(3);
   });
 });

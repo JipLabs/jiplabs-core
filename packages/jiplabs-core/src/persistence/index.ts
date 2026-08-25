@@ -20,6 +20,7 @@ export {
   ALL_MIGRATIONS,
   MIGRATION_001_INITIAL,
   MIGRATION_002_EVALUATION_CORPUS,
+  MIGRATION_003_COMPONENT_GOVERNANCE,
   applyMigrations,
   assertSupportedSchemaVersion,
 } from "./migrations.js";

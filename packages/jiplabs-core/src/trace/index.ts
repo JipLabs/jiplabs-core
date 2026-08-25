@@ -1,3 +1,4 @@
+import type { ComponentGovernanceTraceRefs } from "../component-governance/types.js";
 import { GovernanceError, GovernanceErrorCode } from "../errors.js";
 import { freezeDeep } from "../envelope.js";
 import type { ActionAuthorization, ActionRequest, ActionResult } from "../actions/index.js";
@@ -28,7 +29,8 @@ export type TraceStage =
   | "OVERRIDE"
   | "ROLLBACK"
   | "DISPOSITION"
-  | "HUMAN_APPROVAL";
+  | "HUMAN_APPROVAL"
+  | "COMPONENT_GOVERNANCE";
 
 export type TraceLink = {
   readonly stage: TraceStage;
@@ -57,6 +59,7 @@ export type DecisionTrace = EntityEnvelope & {
   readonly disposition?: Disposition;
   readonly evaluationId?: string;
   readonly authorizationId?: string;
+  readonly componentGovernance?: ComponentGovernanceTraceRefs;
 };
 
 export type TraceInput = {
@@ -81,6 +84,7 @@ export type TraceInput = {
   readonly rollbackPlan?: RollbackPlan;
   readonly rollbackExecution?: RollbackExecution;
   readonly ledgerEvents?: readonly GovernanceEvent[];
+  readonly componentGovernance?: ComponentGovernanceTraceRefs;
 };
 
 export function buildDecisionTrace(input: TraceInput): DecisionTrace {
@@ -191,6 +195,15 @@ export function buildDecisionTrace(input: TraceInput): DecisionTrace {
     });
   }
 
+  if (input.componentGovernance?.componentId) {
+    links.push({
+      stage: "COMPONENT_GOVERNANCE",
+      refId: input.componentGovernance.assignmentId ?? input.componentGovernance.componentId,
+      at,
+      summary: `Component ${input.componentGovernance.componentId}@${input.componentGovernance.componentVersion ?? "?"}`,
+    });
+  }
+
   links.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 
   const overrideIds = (input.overrides ?? []).map((o) => o.id);
@@ -222,6 +235,7 @@ export function buildDecisionTrace(input: TraceInput): DecisionTrace {
     disposition: input.disposition,
     evaluationId: input.evaluation?.id,
     authorizationId: input.actionAuthorization?.id,
+    ...(input.componentGovernance ? { componentGovernance: freezeDeep({ ...input.componentGovernance }) } : {}),
   });
 }
 
@@ -250,6 +264,7 @@ export function answerTraceQuestions(trace: DecisionTrace): {
   readonly disposition?: Disposition;
   readonly authorizationId?: string;
   readonly evaluationId?: string;
+  readonly componentGovernance?: ComponentGovernanceTraceRefs;
 } {
   return {
     whoDecided: trace.who,
@@ -265,5 +280,6 @@ export function answerTraceQuestions(trace: DecisionTrace): {
     disposition: trace.disposition,
     authorizationId: trace.authorizationId,
     evaluationId: trace.evaluationId,
+    componentGovernance: trace.componentGovernance,
   };
 }
