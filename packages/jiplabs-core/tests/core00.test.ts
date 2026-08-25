@@ -23,11 +23,11 @@ import {
   createOutcome,
   createPolicyVersion,
   evaluateAuthorityGrant,
+  evaluateDomainDecisionAuthorization,
   evaluateDecisionProposal,
   evaluatePolicyGates,
   evaluateRollbackReadiness,
   freezeDeep,
-  governDomainDecision,
   GovernanceError,
   GovernanceErrorCode,
   InMemoryGovernanceLedger,
@@ -36,7 +36,7 @@ import {
   revisePolicyVersion,
   buildDecisionTrace,
   answerTraceQuestions,
-  type DomainAdapterBundle,
+  type DomainGovernanceAdapter,
   type PolicyGate,
 } from "../src/index.js";
 import {
@@ -128,6 +128,34 @@ function activeGrant(
   });
 }
 
+function testSnapshot(proposalId: string): {
+  proposalId: string;
+  authorityGrantId: string;
+  authorityGrantContentHash: string;
+  authorityCode: string;
+  requiredCapability: string;
+  policyId: string;
+  policyVersion: string;
+  policyContentHash: string;
+  evidenceRefs: readonly string[];
+  gateResults: readonly [];
+  decidedAt: string;
+} {
+  return {
+    proposalId,
+    authorityGrantId: "grant-test",
+    authorityGrantContentHash: "hash-grant",
+    authorityCode: "TEST_AUTH",
+    requiredCapability: "PROMOTE_MODEL",
+    policyId: "test-policy",
+    policyVersion: "1.0.0",
+    policyContentHash: "hash-policy",
+    evidenceRefs: [],
+    gateResults: [],
+    decidedAt: AT,
+  };
+}
+
 describe("CORE-00 constitution tests", () => {
   it("1. proposal != decision", () => {
     const proposal = createDecisionProposal({
@@ -163,6 +191,7 @@ describe("CORE-00 constitution tests", () => {
       rollbackRequired: false,
       explanationRef: "exp-1",
       autonomyMode: "AUTONOMOUS",
+      governanceSnapshot: testSnapshot(proposal.id),
     });
     expect(proposal.id).not.toBe(decision.id);
     expect(proposal.action).toBe("PROMOTE");
@@ -190,6 +219,7 @@ describe("CORE-00 constitution tests", () => {
       rollbackRequired: false,
       explanationRef: "exp-2",
       autonomyMode: "AUTONOMOUS",
+      governanceSnapshot: testSnapshot("prop-2"),
     });
     const action = createActionRequest({
       id: "act-req-1",
@@ -732,7 +762,7 @@ describe("CORE-00 constitution tests", () => {
       createdAt: AT,
       provenance: PROVENANCE,
     });
-    const adapter: DomainAdapterBundle = {
+    const adapter: DomainGovernanceAdapter = {
       domain: "test-domain",
       observationProvider: {
         domain: "test-domain",
@@ -746,16 +776,8 @@ describe("CORE-00 constitution tests", () => {
         domain: "test-domain",
         collectEvidence: () => [],
       },
-      actionExecutor: {
-        domain: "test-domain",
-        execute: () => ({ status: "EXECUTED" }),
-      },
-      outcomeEvaluator: {
-        domain: "test-domain",
-        evaluate: () => ({ verdict: "KEEP", rationale: "ok" }),
-      },
     };
-    const result = governDomainDecision({
+    const result = evaluateDomainDecisionAuthorization({
       adapter,
       actor,
       authority,
@@ -767,8 +789,6 @@ describe("CORE-00 constitution tests", () => {
       at: AT,
       decisionId: "dec-21",
       explanationId: "exp-21",
-      actionRequestId: "ar-21",
-      authorizationId: "aa-21",
     });
     expect(result.ok).toBe(false);
     assertDomainAdapterCannotBypassCore(result, true);

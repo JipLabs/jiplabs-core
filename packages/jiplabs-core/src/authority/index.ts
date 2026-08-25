@@ -15,25 +15,18 @@ import type {
   ResourceRef,
 } from "../schema.js";
 
+import type { CapabilityId } from "./capabilities.js";
+export {
+  WellKnownCapability,
+  isCapabilityId,
+  type AuthorityScope,
+  type CapabilityId,
+} from "./capabilities.js";
+
 /**
- * Named authority scopes. Core does not interpret domain semantics;
- * products declare which scopes their policies require.
+ * Named authority capabilities. Core does not interpret domain semantics;
+ * products declare which capabilities their policies require.
  */
-export type AuthorityScope =
-  | "OBSERVE"
-  | "FORM_HYPOTHESIS"
-  | "REGISTER_EXPERIMENT"
-  | "EXECUTE_EXPERIMENT"
-  | "EVALUATE_EXPERIMENT"
-  | "PROPOSE_CHALLENGER"
-  | "PROMOTE_MODEL"
-  | "DEMOTE_MODEL"
-  | "ROLLBACK_MODEL"
-  | "ACQUIRE_DATA"
-  | "MODIFY_POLICY"
-  | "OVERRIDE_DECISION"
-  | "MODEL_GOVERNANCE"
-  | (string & {});
 
 export type GrantConditionOperator = "EQ" | "IN" | "EXISTS";
 
@@ -53,7 +46,7 @@ export type DelegationRules = {
 /** Catalog entry for a named authority. */
 export type Authority = EntityEnvelope & {
   readonly code: string;
-  readonly scopes: readonly AuthorityScope[];
+  readonly scopes: readonly CapabilityId[];
   readonly description?: string;
 };
 
@@ -61,7 +54,7 @@ export type AuthorityGrant = EntityEnvelope & {
   readonly actorId: string;
   readonly authorityId: string;
   readonly authorityCode: string;
-  readonly scopes: readonly AuthorityScope[];
+  readonly scopes: readonly CapabilityId[];
   readonly resource: ResourceRef;
   readonly conditions: readonly GrantCondition[];
   readonly validFrom: IsoTimestamp;
@@ -90,7 +83,7 @@ export type AuthorityCheckResult =
       readonly grantId: string;
       readonly authorityId: string;
       readonly authorityCode: string;
-      readonly scopes: readonly AuthorityScope[];
+      readonly scopes: readonly CapabilityId[];
     }
   | {
       readonly allowed: false;
@@ -103,7 +96,7 @@ function grantContent(input: {
   readonly actorId: string;
   readonly authorityId: string;
   readonly authorityCode: string;
-  readonly scopes: readonly AuthorityScope[];
+  readonly scopes: readonly CapabilityId[];
   readonly resource: ResourceRef;
   readonly conditions: readonly GrantCondition[];
   readonly validFrom: IsoTimestamp;
@@ -128,7 +121,7 @@ function grantContent(input: {
 export function createAuthority(input: {
   readonly id: string;
   readonly code: string;
-  readonly scopes: readonly AuthorityScope[];
+  readonly scopes: readonly CapabilityId[];
   readonly createdAt: IsoTimestamp;
   readonly recordedAt?: IsoTimestamp;
   readonly provenance: Provenance;
@@ -146,7 +139,7 @@ export function createAuthorityGrant(input: {
   readonly id: string;
   readonly actorId: string;
   readonly authority: Authority;
-  readonly scopes: readonly AuthorityScope[];
+  readonly scopes: readonly CapabilityId[];
   readonly resource: ResourceRef;
   readonly createdAt: IsoTimestamp;
   readonly recordedAt?: IsoTimestamp;
@@ -190,7 +183,7 @@ export function createAuthorityGrant(input: {
     actorId: requireNonEmpty(input.actorId, "actorId"),
     authorityId: input.authority.id,
     authorityCode: input.authority.code,
-    scopes: Object.freeze(scopes) as readonly AuthorityScope[],
+    scopes: Object.freeze(scopes) as readonly CapabilityId[],
     resource: freezeDeep({ ...input.resource }),
     conditions: Object.freeze([...(input.conditions ?? [])]),
     validFrom: requireIsoTimestamp(input.validFrom, "validFrom"),
@@ -271,7 +264,7 @@ export function evaluateAuthorityGrant(input: {
   readonly grant: AuthorityGrant | null | undefined;
   readonly authority: Authority;
   readonly actorId: string;
-  readonly scope: AuthorityScope;
+  readonly scope: CapabilityId;
   readonly resource: ResourceRef;
   readonly at: IsoTimestamp;
   readonly conditionContext?: Readonly<Record<string, JsonSafeValue>>;

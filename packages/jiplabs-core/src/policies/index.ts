@@ -7,7 +7,7 @@ import type {
   JsonSafeValue,
   Provenance,
 } from "../schema.js";
-import type { AuthorityScope } from "../authority/index.js";
+import type { CapabilityId } from "../authority/capabilities.js";
 
 export type PolicyStatus = "DRAFT" | "ACTIVE" | "SUPERSEDED" | "REVOKED";
 
@@ -55,7 +55,7 @@ export type RollbackRequirements = {
 
 export type OverrideRules = {
   readonly humanOverrideAvailable: boolean;
-  readonly requiredAuthorityScope: AuthorityScope;
+  readonly requiredAuthorityScope: CapabilityId;
 };
 
 export type Policy = EntityEnvelope & {
@@ -76,7 +76,7 @@ export type PolicyVersion = EntityEnvelope & {
   readonly decisionType: string;
   readonly status: PolicyStatus;
   readonly applicableActorAuthority: readonly string[];
-  readonly requiredAuthorityScope: AuthorityScope;
+  readonly requiredAuthorityScope: CapabilityId;
   readonly requiredEvidence: readonly string[];
   readonly gates: readonly PolicyGate[];
   readonly decisionOutcomes: DecisionOutcomes;
@@ -97,7 +97,7 @@ export function policyContentPayload(input: {
   readonly domain: string;
   readonly decisionType: string;
   readonly applicableActorAuthority: readonly string[];
-  readonly requiredAuthorityScope: AuthorityScope;
+  readonly requiredAuthorityScope: CapabilityId;
   readonly requiredEvidence: readonly string[];
   readonly gates: readonly PolicyGate[];
   readonly decisionOutcomes: DecisionOutcomes;
@@ -154,7 +154,7 @@ export function createPolicyVersion(input: {
   readonly recordedAt?: IsoTimestamp;
   readonly provenance: Provenance;
   readonly applicableActorAuthority: readonly string[];
-  readonly requiredAuthorityScope: AuthorityScope;
+  readonly requiredAuthorityScope: CapabilityId;
   readonly requiredEvidence: readonly string[];
   readonly gates: readonly PolicyGate[];
   readonly decisionOutcomes: DecisionOutcomes;

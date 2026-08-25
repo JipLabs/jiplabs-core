@@ -28,6 +28,13 @@ export { canonicalJson, sha256Canonical, sha256Hex } from "./hash.js";
 export { createActor, type Actor, type ActorType } from "./actors/index.js";
 
 export {
+  WellKnownCapability,
+  isCapabilityId,
+  type AuthorityScope,
+  type CapabilityId,
+} from "./authority/capabilities.js";
+
+export {
   createAuthority,
   createAuthorityGrant,
   evaluateAuthorityGrant,
@@ -35,7 +42,6 @@ export {
   type Authority,
   type AuthorityCheckResult,
   type AuthorityGrant,
-  type AuthorityScope,
   type DelegationRules,
   type GrantCondition,
 } from "./authority/index.js";
@@ -74,13 +80,17 @@ export {
   computeDecisionHash,
   createDecision,
   createDecisionExplanation,
+  createDecisionGovernanceSnapshot,
   createDecisionProposal,
   evaluateDecisionProposal,
   reconstructDecision,
+  reconstructDecisionFromSnapshot,
   type Decision,
   type DecisionEvaluationResult,
   type DecisionExplanation,
+  type DecisionGovernanceSnapshot,
   type DecisionProposal,
+  type DecisionReconstructionResult,
   type DecisionStatus,
   type RejectedAlternative,
 } from "./decisions/index.js";
@@ -132,13 +142,16 @@ export {
 } from "./override/index.js";
 
 export {
+  assertHistoricalAuditSelfContained,
   assertLedgerAppendOnly,
+  createDecisionMadeEvent,
   createGovernanceEvent,
   InMemoryGovernanceLedger,
   type AppendResult,
   type GovernanceEvent,
   type GovernanceEventType,
   type GovernanceLedger,
+  type GovernanceTemporalRefs,
 } from "./ledger/index.js";
 
 export {
@@ -152,17 +165,19 @@ export {
 
 export {
   assertDomainAdapterCannotBypassCore,
+  evaluateDomainDecisionAuthorization,
   governDomainDecision,
   type DomainActionExecutionRequest,
   type DomainActionExecutionResult,
   type DomainActionExecutor,
   type DomainAdapterBundle,
   type DomainEvidenceProvider,
+  type DomainGovernanceAdapter,
   type DomainObservation,
   type DomainObservationProvider,
   type DomainOutcomeEvaluation,
   type DomainOutcomeEvaluator,
   type DomainPolicyProvider,
-  type GovernedDomainDecisionInput,
-  type GovernedDomainDecisionResult,
+  type EvaluateDomainDecisionAuthorizationInput,
+  type EvaluateDomainDecisionAuthorizationResult,
 } from "./domain/index.js";

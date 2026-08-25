@@ -4,6 +4,7 @@ import {
   requireNonEmpty,
   requireIsoTimestamp,
 } from "../envelope.js";
+import type { Decision } from "../decisions/index.js";
 import type { IsoTimestamp, JsonSafeMetadata, Provenance } from "../schema.js";
 
 export type GovernanceEventType =
@@ -23,6 +24,21 @@ export type GovernanceEventType =
   | "HUMAN_CHALLENGE"
   | "HUMAN_OVERRIDE";
 
+/**
+ * Temporal refs captured at event time so historical audit never depends on
+ * mutable current authority/policy state.
+ */
+export type GovernanceTemporalRefs = {
+  readonly payloadContentHash?: string;
+  readonly authorityGrantId?: string;
+  readonly authorityGrantContentHash?: string;
+  readonly policyId?: string;
+  readonly policyVersion?: string;
+  readonly policyContentHash?: string;
+  readonly decisionHash?: string;
+  readonly proposalId?: string;
+};
+
 export type GovernanceEvent = {
   readonly eventId: string;
   readonly eventType: GovernanceEventType;
@@ -34,6 +50,7 @@ export type GovernanceEvent = {
   readonly idempotencyKey: string;
   readonly sequence: number;
   readonly provenance: Provenance;
+  readonly temporalRefs?: GovernanceTemporalRefs;
   readonly metadata?: JsonSafeMetadata;
 };
 
@@ -59,6 +76,7 @@ export function createGovernanceEvent(input: {
   readonly sequence: number;
   readonly provenance: Provenance;
   readonly subjectRef?: string;
+  readonly temporalRefs?: GovernanceTemporalRefs;
   readonly metadata?: JsonSafeMetadata;
 }): GovernanceEvent {
   return freezeDeep({
@@ -75,7 +93,41 @@ export function createGovernanceEvent(input: {
     sequence: input.sequence,
     provenance: freezeDeep({ ...input.provenance }),
     ...(input.subjectRef ? { subjectRef: input.subjectRef } : {}),
+    ...(input.temporalRefs
+      ? { temporalRefs: freezeDeep({ ...input.temporalRefs }) }
+      : {}),
     ...(input.metadata ? { metadata: input.metadata } : {}),
+  });
+}
+
+export function createDecisionMadeEvent(input: {
+  readonly eventId: string;
+  readonly occurredAt: IsoTimestamp;
+  readonly actorId: string;
+  readonly decision: Decision;
+  readonly provenance: Provenance;
+  readonly idempotencyKey?: string;
+}): Omit<GovernanceEvent, "sequence"> {
+  const snapshot = input.decision.governanceSnapshot;
+  return createGovernanceEvent({
+    eventId: input.eventId,
+    eventType: "DECISION_MADE",
+    occurredAt: input.occurredAt,
+    actorId: input.actorId,
+    payloadRef: input.decision.id,
+    idempotencyKey:
+      input.idempotencyKey ?? `decision:${input.decision.id}`,
+    sequence: 0,
+    provenance: input.provenance,
+    temporalRefs: {
+      proposalId: snapshot.proposalId,
+      authorityGrantId: snapshot.authorityGrantId,
+      authorityGrantContentHash: snapshot.authorityGrantContentHash,
+      policyId: snapshot.policyId,
+      policyVersion: snapshot.policyVersion,
+      policyContentHash: snapshot.policyContentHash,
+      decisionHash: input.decision.decisionHash,
+    },
   });
 }
 
@@ -151,5 +203,25 @@ export function assertLedgerAppendOnly(ledger: GovernanceLedger): void {
         "ledger event order or content changed between reads",
       );
     }
+  }
+}
+
+export function assertHistoricalAuditSelfContained(
+  event: GovernanceEvent,
+): void {
+  if (event.eventType !== "DECISION_MADE") {
+    return;
+  }
+  const refs = event.temporalRefs;
+  if (
+    !refs?.decisionHash ||
+    !refs.policyContentHash ||
+    !refs.authorityGrantContentHash ||
+    !refs.proposalId
+  ) {
+    throw new GovernanceError(
+      GovernanceErrorCode.INVALID_VALUE,
+      "DECISION_MADE event missing temporal refs for historical audit",
+    );
   }
 }

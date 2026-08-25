@@ -1,15 +1,12 @@
 import { GovernanceError, GovernanceErrorCode } from "../errors.js";
-import { authorizeAction } from "../actions/index.js";
 import {
   evaluateDecisionProposal,
   type Decision,
+  type DecisionEvaluationResult,
   type DecisionProposal,
 } from "../decisions/index.js";
 import type { Evidence } from "../evidence/index.js";
-import type {
-  Authority,
-  AuthorityGrant,
-} from "../authority/index.js";
+import type { Authority, AuthorityGrant } from "../authority/index.js";
 import type { Actor } from "../actors/index.js";
 import type { PolicyVersion } from "../policies/index.js";
 import type { RollbackPlan } from "../rollback/index.js";
@@ -47,6 +44,7 @@ export interface DomainEvidenceProvider {
   }): Promise<readonly Evidence[]> | readonly Evidence[];
 }
 
+/** CORE-01 runtime contract — not invoked by CORE-00 evaluation. */
 export type DomainActionExecutionRequest = {
   readonly decision: Decision;
   readonly action: string;
@@ -58,6 +56,7 @@ export type DomainActionExecutionResult = {
   readonly resultRef?: string;
 };
 
+/** CORE-01 runtime contract — not invoked by CORE-00 evaluation. */
 export interface DomainActionExecutor {
   readonly domain: string;
   execute(
@@ -70,6 +69,7 @@ export type DomainOutcomeEvaluation = {
   readonly rationale: string;
 };
 
+/** CORE-01 runtime contract — not invoked by CORE-00 evaluation. */
 export interface DomainOutcomeEvaluator {
   readonly domain: string;
   evaluate(input: {
@@ -78,17 +78,22 @@ export interface DomainOutcomeEvaluator {
   }): DomainOutcomeEvaluation;
 }
 
-export type DomainAdapterBundle = {
+/** Governance-only adapter surface for CORE-00 authorization evaluation. */
+export type DomainGovernanceAdapter = {
   readonly domain: string;
   readonly observationProvider: DomainObservationProvider;
   readonly policyProvider: DomainPolicyProvider;
   readonly evidenceProvider: DomainEvidenceProvider;
+};
+
+/** Full domain adapter bundle — execution/evaluation wired in CORE-01. */
+export type DomainAdapterBundle = DomainGovernanceAdapter & {
   readonly actionExecutor: DomainActionExecutor;
   readonly outcomeEvaluator: DomainOutcomeEvaluator;
 };
 
-export type GovernedDomainDecisionInput = {
-  readonly adapter: DomainAdapterBundle;
+export type EvaluateDomainDecisionAuthorizationInput = {
+  readonly adapter: DomainGovernanceAdapter;
   readonly actor: Actor;
   readonly authority: Authority;
   readonly grant: AuthorityGrant | null | undefined;
@@ -100,29 +105,17 @@ export type GovernedDomainDecisionInput = {
   readonly at: IsoTimestamp;
   readonly decisionId: string;
   readonly explanationId: string;
-  readonly actionRequestId: string;
-  readonly authorizationId: string;
 };
 
-export type GovernedDomainDecisionResult =
-  | {
-      readonly ok: true;
-      readonly decision: Decision;
-      readonly authorizationId: string;
-    }
-  | {
-      readonly ok: false;
-      readonly code: string;
-      readonly message: string;
-    };
+export type EvaluateDomainDecisionAuthorizationResult = DecisionEvaluationResult;
 
 /**
- * Domain adapters may supply semantics, but authorization always flows through Core.
- * This helper proves adapters cannot bypass authority/policy/gate evaluation.
+ * CORE-00: deterministically evaluate whether a domain proposal is authorized.
+ * Does not authorize or execute actions — that belongs to CORE-01.
  */
-export function governDomainDecision(
-  input: GovernedDomainDecisionInput,
-): GovernedDomainDecisionResult {
+export function evaluateDomainDecisionAuthorization(
+  input: EvaluateDomainDecisionAuthorizationInput,
+): EvaluateDomainDecisionAuthorizationResult {
   if (input.adapter.domain !== input.proposal.domain) {
     return {
       ok: false,
@@ -130,7 +123,7 @@ export function governDomainDecision(
       message: "adapter domain mismatch",
     };
   }
-  const evaluation = evaluateDecisionProposal({
+  return evaluateDecisionProposal({
     proposal: input.proposal,
     actor: input.actor,
     authority: input.authority,
@@ -143,57 +136,22 @@ export function governDomainDecision(
     decisionId: input.decisionId,
     explanationId: input.explanationId,
   });
-  if (!evaluation.ok) {
-    return {
-      ok: false,
-      code: evaluation.code,
-      message: evaluation.message,
-    };
-  }
-  if (evaluation.decision.humanApprovalRequired) {
-    return {
-      ok: false,
-      code: GovernanceErrorCode.HUMAN_APPROVAL_REQUIRED,
-      message: "human approval required before domain action execution",
-    };
-  }
-  try {
-    authorizeAction({
-      id: input.authorizationId,
-      decision: evaluation.decision,
-      actionRequest: {
-        id: input.actionRequestId,
-        schemaVersion: evaluation.decision.schemaVersion,
-        createdAt: input.at,
-        recordedAt: input.at,
-        provenance: input.proposal.provenance,
-        decisionId: evaluation.decision.id,
-        action: input.proposal.action,
-        subject: input.proposal.subject,
-        requestedAt: input.at,
-      },
-      at: input.at,
-      createdAt: input.at,
-      provenance: input.proposal.provenance,
-    });
-  } catch (error) {
-    const code =
-      error instanceof GovernanceError
-        ? error.code
-        : GovernanceErrorCode.ACTION_NOT_AUTHORIZED;
-    const message =
-      error instanceof Error ? error.message : "action authorization failed";
-    return { ok: false, code, message };
-  }
-  return {
-    ok: true,
-    decision: evaluation.decision,
-    authorizationId: input.authorizationId,
-  };
+}
+
+/**
+ * @deprecated Use evaluateDomainDecisionAuthorization — CORE-00 must not orchestrate action authorization.
+ */
+export function governDomainDecision(
+  input: EvaluateDomainDecisionAuthorizationInput & {
+    readonly actionRequestId?: string;
+    readonly authorizationId?: string;
+  },
+): EvaluateDomainDecisionAuthorizationResult {
+  return evaluateDomainDecisionAuthorization(input);
 }
 
 export function assertDomainAdapterCannotBypassCore(
-  result: GovernedDomainDecisionResult,
+  result: EvaluateDomainDecisionAuthorizationResult,
   attemptedBypass: boolean,
 ): void {
   if (attemptedBypass && result.ok) {

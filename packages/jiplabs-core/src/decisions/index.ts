@@ -4,8 +4,8 @@ import {
   evaluateAuthorityGrant,
   type Authority,
   type AuthorityGrant,
-  type AuthorityScope,
 } from "../authority/index.js";
+import type { CapabilityId } from "../authority/capabilities.js";
 import { evidenceByKind, type Evidence } from "../evidence/index.js";
 import { sha256Canonical } from "../hash.js";
 import {
@@ -55,6 +55,20 @@ export type DecisionProposal = EntityEnvelope & {
   readonly metadata?: JsonSafeMetadata;
 };
 
+export type DecisionGovernanceSnapshot = {
+  readonly proposalId: string;
+  readonly authorityGrantId: string;
+  readonly authorityGrantContentHash: string;
+  readonly authorityCode: string;
+  readonly requiredCapability: CapabilityId;
+  readonly policyId: string;
+  readonly policyVersion: string;
+  readonly policyContentHash: string;
+  readonly evidenceRefs: readonly string[];
+  readonly gateResults: readonly GateResult[];
+  readonly decidedAt: IsoTimestamp;
+};
+
 export type Decision = EntityEnvelope & {
   readonly proposalId: string;
   readonly actorId: string;
@@ -68,6 +82,7 @@ export type Decision = EntityEnvelope & {
   readonly status: DecisionStatus;
   readonly decidedAt: IsoTimestamp;
   readonly decisionHash: string;
+  readonly governanceSnapshot: DecisionGovernanceSnapshot;
   readonly humanApprovalRequired: boolean;
   readonly humanOverrideAvailable: boolean;
   readonly rollbackRequired: boolean;
@@ -108,6 +123,38 @@ export type DecisionEvaluationResult =
       readonly authorityCheck?: AuthorityCheckResult;
       readonly gateResults?: readonly GateResult[];
     };
+
+export type DecisionReconstructionResult = {
+  readonly decisionValue: string;
+  readonly gateResults: readonly GateResult[];
+  readonly matchesSnapshot: boolean;
+  readonly snapshot: DecisionGovernanceSnapshot;
+};
+
+export function createDecisionGovernanceSnapshot(input: {
+  readonly proposalId: string;
+  readonly grant: AuthorityGrant;
+  readonly authorityCode: string;
+  readonly requiredCapability: CapabilityId;
+  readonly policyVersion: PolicyVersion;
+  readonly evidenceRefs: readonly string[];
+  readonly gateResults: readonly GateResult[];
+  readonly decidedAt: IsoTimestamp;
+}): DecisionGovernanceSnapshot {
+  return freezeDeep({
+    proposalId: input.proposalId,
+    authorityGrantId: input.grant.id,
+    authorityGrantContentHash: input.grant.contentHash,
+    authorityCode: input.authorityCode,
+    requiredCapability: input.requiredCapability,
+    policyId: input.policyVersion.policyId,
+    policyVersion: input.policyVersion.version,
+    policyContentHash: input.policyVersion.contentHash,
+    evidenceRefs: Object.freeze([...input.evidenceRefs]),
+    gateResults: freezeDeep([...input.gateResults]),
+    decidedAt: input.decidedAt,
+  });
+}
 
 function decisionHashPayload(input: {
   readonly proposalId: string;
@@ -186,6 +233,7 @@ export function createDecision(input: {
   readonly rollbackPlanId?: string;
   readonly explanationRef: string;
   readonly autonomyMode: PolicyVersion["autonomyMode"];
+  readonly governanceSnapshot: DecisionGovernanceSnapshot;
   readonly metadata?: JsonSafeMetadata;
 }): Decision {
   const body = {
@@ -207,6 +255,7 @@ export function createDecision(input: {
     explanationRef: requireNonEmpty(input.explanationRef, "explanationRef"),
     autonomyMode: input.autonomyMode,
     ...(input.metadata ? { metadata: input.metadata } : {}),
+    governanceSnapshot: freezeDeep({ ...input.governanceSnapshot }),
   };
   return freezeDeep({
     ...envelope(input),
@@ -296,7 +345,7 @@ export function evaluateDecisionProposal(input: {
     grant: input.grant,
     authority: input.authority,
     actorId: input.actor.id,
-    scope: input.policyVersion.requiredAuthorityScope as AuthorityScope,
+    scope: input.policyVersion.requiredAuthorityScope,
     resource: input.resource,
     at: input.at,
     parentGrant: input.parentGrant,
@@ -375,7 +424,26 @@ export function evaluateDecisionProposal(input: {
     status = "DECIDED";
   }
 
+  if (!input.grant) {
+    return {
+      ok: false,
+      code: GovernanceErrorCode.AUTHORITY_MISSING,
+      message: "authority grant missing after successful check",
+    };
+  }
+
   const evidenceRefs = input.evidence.map((e) => e.id);
+  const governanceSnapshot = createDecisionGovernanceSnapshot({
+    proposalId: input.proposal.id,
+    grant: input.grant,
+    authorityCode: authorityCheck.authorityCode,
+    requiredCapability: input.policyVersion.requiredAuthorityScope,
+    policyVersion: input.policyVersion,
+    evidenceRefs,
+    gateResults,
+    decidedAt: input.at,
+  });
+
   const explanation = createDecisionExplanation({
     id: input.explanationId,
     decisionId: input.decisionId,
@@ -419,6 +487,7 @@ export function evaluateDecisionProposal(input: {
         : undefined,
     explanationRef: explanation.id,
     autonomyMode: input.policyVersion.autonomyMode,
+    governanceSnapshot,
   });
 
   return {
@@ -429,21 +498,72 @@ export function evaluateDecisionProposal(input: {
   };
 }
 
-export function reconstructDecision(input: {
+export function reconstructDecisionFromSnapshot(input: {
+  readonly snapshot: DecisionGovernanceSnapshot;
   readonly proposal: DecisionProposal;
-  readonly policyVersion: PolicyVersion;
-  readonly evidence: readonly Evidence[];
-  readonly authorityRef: string;
-  readonly authorityCode: string;
-  readonly decidedAt: IsoTimestamp;
-}): { readonly decisionValue: string; readonly gateResults: readonly GateResult[] } {
+  readonly policyVersionAtDecisionTime: PolicyVersion;
+  readonly evidenceAtDecisionTime: readonly Evidence[];
+}): DecisionReconstructionResult {
+  if (input.snapshot.proposalId !== input.proposal.id) {
+    throw new GovernanceError(
+      GovernanceErrorCode.INVALID_VALUE,
+      "proposal does not match decision-time snapshot",
+    );
+  }
+  if (
+    input.policyVersionAtDecisionTime.contentHash !==
+    input.snapshot.policyContentHash
+  ) {
+    throw new GovernanceError(
+      GovernanceErrorCode.INVALID_VALUE,
+      "policy version content hash does not match decision-time snapshot",
+    );
+  }
+  if (
+    input.policyVersionAtDecisionTime.policyId !== input.snapshot.policyId ||
+    input.policyVersionAtDecisionTime.version !== input.snapshot.policyVersion
+  ) {
+    throw new GovernanceError(
+      GovernanceErrorCode.INVALID_VALUE,
+      "policy identity does not match decision-time snapshot",
+    );
+  }
+
   const gateResults = evaluatePolicyGates(
-    input.policyVersion.gates,
-    evidenceByKind(input.evidence),
+    input.policyVersionAtDecisionTime.gates,
+    evidenceByKind(input.evidenceAtDecisionTime),
   );
   const gatesOk = mandatoryGatesPassed(gateResults);
   const decisionValue = gatesOk
-    ? input.policyVersion.decisionOutcomes.onPass
-    : input.policyVersion.decisionOutcomes.onFail;
-  return { decisionValue, gateResults };
+    ? input.policyVersionAtDecisionTime.decisionOutcomes.onPass
+    : input.policyVersionAtDecisionTime.decisionOutcomes.onFail;
+
+  const evidenceMatches =
+    [...input.snapshot.evidenceRefs].sort().join("|") ===
+    [...input.evidenceAtDecisionTime.map((e) => e.id)].sort().join("|");
+  const gateResultsMatch =
+    sha256Canonical(gateResults) ===
+    sha256Canonical(input.snapshot.gateResults);
+
+  return {
+    decisionValue,
+    gateResults,
+    matchesSnapshot: evidenceMatches && gateResultsMatch,
+    snapshot: input.snapshot,
+  };
+}
+
+/** Reconstruct using the immutable snapshot stored on the decision. */
+export function reconstructDecision(input: {
+  readonly decision: Decision;
+  readonly proposal: DecisionProposal;
+  readonly policyVersionAtDecisionTime: PolicyVersion;
+  readonly evidenceAtDecisionTime: readonly Evidence[];
+}): DecisionReconstructionResult {
+  return reconstructDecisionFromSnapshot({
+    snapshot: input.decision.governanceSnapshot,
+    proposal: input.proposal,
+    policyVersionAtDecisionTime: input.policyVersionAtDecisionTime,
+    evidenceAtDecisionTime: input.evidenceAtDecisionTime,
+  });
 }

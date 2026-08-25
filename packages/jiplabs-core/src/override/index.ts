@@ -4,6 +4,7 @@ import {
   type Authority,
   type AuthorityGrant,
 } from "../authority/index.js";
+import { WellKnownCapability, type CapabilityId } from "../authority/capabilities.js";
 import { envelope, freezeDeep, requireNonEmpty, requireIsoTimestamp } from "../envelope.js";
 import type { Decision } from "../decisions/index.js";
 import type {
@@ -98,6 +99,7 @@ export function authorizeOverride(input: {
   readonly resource: ResourceRef;
   readonly at: IsoTimestamp;
   readonly provenance: Provenance;
+  readonly requiredCapability?: CapabilityId;
 }):
   | { readonly ok: true; readonly override: Override }
   | { readonly ok: false; readonly code: string; readonly message: string } {
@@ -105,7 +107,7 @@ export function authorizeOverride(input: {
     grant: input.grant,
     authority: input.authority,
     actorId: input.humanActorId,
-    scope: "OVERRIDE_DECISION",
+    scope: input.requiredCapability ?? WellKnownCapability.OVERRIDE_DECISION,
     resource: input.resource,
     at: input.at,
   });
