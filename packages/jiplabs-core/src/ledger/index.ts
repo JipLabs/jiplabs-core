@@ -116,6 +116,7 @@ export function createDecisionMadeEvent(input: {
   readonly decision: Decision;
   readonly provenance: Provenance;
   readonly idempotencyKey?: string;
+  readonly metadata?: JsonSafeMetadata;
 }): Omit<GovernanceEvent, "sequence"> {
   const snapshot = input.decision.governanceSnapshot;
   return createGovernanceEvent({
@@ -137,6 +138,7 @@ export function createDecisionMadeEvent(input: {
       policyContentHash: snapshot.policyContentHash,
       decisionHash: input.decision.decisionHash,
     },
+    ...(input.metadata ? { metadata: input.metadata } : {}),
   });
 }
 

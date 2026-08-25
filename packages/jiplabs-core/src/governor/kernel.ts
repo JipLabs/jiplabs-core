@@ -45,10 +45,13 @@ import {
 import {
   createInitialRun,
   transitionRun,
+  type DurableExecutionAttempt,
   type GovernanceRun,
   type GovernanceRunStore,
   InMemoryGovernanceRunStore,
 } from "./runtime-state.js";
+import type { ExecutionAttemptStore } from "../persistence/interfaces.js";
+import type { GovernanceUnitOfWork } from "../persistence/interfaces.js";
 import {
   emitActionAuthorized,
   emitActionExecuted,
@@ -160,6 +163,9 @@ export type GovernorKernelDeps = {
   readonly runStore?: GovernanceRunStore;
   readonly ledger: GovernanceLedger;
   readonly claimStore?: ExecutionClaimStore;
+  readonly attemptStore?: ExecutionAttemptStore;
+  readonly unitOfWork?: GovernanceUnitOfWork;
+  readonly replayMode?: boolean;
 };
 
 function resourceKey(resource: ResourceRef, subjectId: string): string {
@@ -242,15 +248,70 @@ export class GovernorKernel {
   readonly #runStore: GovernanceRunStore;
   readonly #ledger: GovernanceLedger;
   readonly #claims: ExecutionClaimStore;
+  readonly #attemptStore: ExecutionAttemptStore | null;
+  readonly #unitOfWork: GovernanceUnitOfWork | null;
+  readonly #replayMode: boolean;
 
   constructor(deps: GovernorKernelDeps) {
     this.#runStore = deps.runStore ?? new InMemoryGovernanceRunStore();
     this.#ledger = deps.ledger;
     this.#claims = deps.claimStore ?? new InMemoryExecutionClaimStore();
+    this.#attemptStore = deps.attemptStore ?? null;
+    this.#unitOfWork = deps.unitOfWork ?? null;
+    this.#replayMode = deps.replayMode ?? false;
   }
 
   get runStore(): GovernanceRunStore {
     return this.#runStore;
+  }
+
+  get ledger(): GovernanceLedger {
+    return this.#ledger;
+  }
+
+  get replayMode(): boolean {
+    return this.#replayMode;
+  }
+
+  #persistRun(run: GovernanceRun): void {
+    const save = () => this.#runStore.save(run);
+    try {
+      if (this.#unitOfWork) {
+        this.#unitOfWork.runInTransaction(save);
+      } else {
+        save();
+      }
+    } catch (error) {
+      if (error instanceof GovernanceError) {
+        throw error;
+      }
+      throw new GovernanceError(
+        GovernanceErrorCode.STORAGE_PERSISTENCE_FAILED,
+        error instanceof Error ? error.message : "run persistence failed",
+      );
+    }
+  }
+
+  #persistAttempt(attempt: DurableExecutionAttempt): void {
+    if (!this.#attemptStore) {
+      return;
+    }
+    const save = () => this.#attemptStore!.save(attempt);
+    try {
+      if (this.#unitOfWork) {
+        this.#unitOfWork.runInTransaction(save);
+      } else {
+        save();
+      }
+    } catch (error) {
+      if (error instanceof GovernanceError) {
+        throw error;
+      }
+      throw new GovernanceError(
+        GovernanceErrorCode.STORAGE_PERSISTENCE_FAILED,
+        error instanceof Error ? error.message : "execution attempt persistence failed",
+      );
+    }
   }
 
   async run(input: GovernorRunInput): Promise<GovernorRunResult> {
@@ -329,6 +390,7 @@ export class GovernorKernel {
       proposalId: input.proposal.id,
       idempotencyKey: input.idempotencyKey,
       provenance: input.provenance,
+      runId: input.ids.runId,
     });
 
     const evaluation = evaluateDecisionProposal({
@@ -361,6 +423,7 @@ export class GovernorKernel {
         allowed: false,
         idempotencyKey: input.idempotencyKey,
         provenance: input.provenance,
+        runId: input.ids.runId,
       });
       return this.#fail(run, deniedState, input.at, evaluation.code, evaluation.message);
     }
@@ -374,6 +437,7 @@ export class GovernorKernel {
       idempotencyKey: input.idempotencyKey,
       provenance: input.provenance,
       authorityGrantContentHash: input.grant?.contentHash,
+      runId: input.ids.runId,
     });
 
     run = transitionRun(run, "POLICY_EVALUATING", input.at);
@@ -393,6 +457,7 @@ export class GovernorKernel {
       decision,
       provenance: input.provenance,
       idempotencyKey: input.idempotencyKey,
+      runId: input.ids.runId,
     });
 
     if (input.policyVersion.autonomyMode === "BLOCKED") {
@@ -410,6 +475,7 @@ export class GovernorKernel {
         decisionId: decision.id,
         provenance: input.provenance,
         idempotencyKey: input.idempotencyKey,
+        runId: input.ids.runId,
       });
       return this.#save(run, run.state, input.at);
     }
@@ -461,6 +527,7 @@ export class GovernorKernel {
       decisionId: approvedDecision.id,
       provenance: input.provenance,
       idempotencyKey: run.idempotencyKey,
+      runId: run.runId,
     });
 
     let next = transitionRun(run, run.state, input.at, {
@@ -524,9 +591,10 @@ export class GovernorKernel {
       authorization,
       provenance: input.provenance,
       idempotencyKey: run.idempotencyKey,
+      runId: run.runId,
     });
 
-    this.#runStore.save(next);
+    this.#persistRun(next);
     const resumeInput: GovernorRunInput = {
       idempotencyKey: run.idempotencyKey,
       ids: {
@@ -579,6 +647,7 @@ export class GovernorKernel {
       decisionId: run.decision.id,
       provenance: input.provenance,
       idempotencyKey: run.idempotencyKey,
+      runId: run.runId,
     });
     const next = transitionRun(run, "BLOCKED", input.at, {
       humanRejected: true,
@@ -712,6 +781,7 @@ export class GovernorKernel {
       decisionId: run.decision.id,
       provenance: input.provenance,
       idempotencyKey: rollbackKey,
+      runId: run.runId,
     });
 
     let next = transitionRun(run, "ROLLBACK_EXECUTING", input.at, {
@@ -719,7 +789,7 @@ export class GovernorKernel {
       rollbackIdempotencyKey: rollbackKey,
       rollbackRequestFingerprint: rollbackFingerprint,
     });
-    this.#runStore.save(next);
+    this.#persistRun(next);
 
     const result = await Promise.resolve(
       input.executeRollback(input.rollbackPlan, run.decision),
@@ -745,7 +815,7 @@ export class GovernorKernel {
       next = transitionRun(next, "ROLLBACK_FAILED", input.at, {
         rollbackExecution: execution,
       });
-      this.#runStore.save(next);
+      this.#persistRun(next);
       return {
         ok: false,
         run: next,
@@ -831,6 +901,7 @@ export class GovernorKernel {
       authorization,
       provenance: input.provenance,
       idempotencyKey: input.idempotencyKey,
+      runId: input.ids.runId,
     });
 
     return this.#executeFromAuthorization(
@@ -871,11 +942,31 @@ export class GovernorKernel {
     }
 
     const attemptId = run.executionAttempt?.attemptId ?? executionAttemptId(run.runId);
+    const storedAttempt = this.#attemptStore?.get(attemptId);
+    const priorStatus = storedAttempt?.status ?? run.executionAttempt?.status;
     let reconciledResultRef: string | undefined;
+    let attemptVersion = storedAttempt?.version ?? 0;
 
-    if (run.executionAttempt?.status === "STARTED") {
+    if (
+      priorStatus === "STARTED" ||
+      priorStatus === "IN_DOUBT" ||
+      priorStatus === "RECONCILIATION_REQUIRED"
+    ) {
       const reconciler = input.adapter.executionReconciler;
       if (!reconciler) {
+        if (this.#attemptStore) {
+          attemptVersion += 1;
+          this.#persistAttempt({
+            attemptId,
+            runId: run.runId,
+            decisionId: decision.id,
+            actionRequestId: actionRequest.id,
+            authorizationId: authorization.id,
+            startedAt: storedAttempt?.startedAt ?? input.at,
+            status: "RECONCILIATION_REQUIRED",
+            version: attemptVersion,
+          });
+        }
         return this.#fail(
           run,
           "RECONCILIATION_REQUIRED",
@@ -893,6 +984,19 @@ export class GovernorKernel {
         }),
       );
       if (reconciliation === "UNKNOWN") {
+        if (this.#attemptStore) {
+          attemptVersion += 1;
+          this.#persistAttempt({
+            attemptId,
+            runId: run.runId,
+            decisionId: decision.id,
+            actionRequestId: actionRequest.id,
+            authorizationId: authorization.id,
+            startedAt: storedAttempt?.startedAt ?? input.at,
+            status: "RECONCILIATION_REQUIRED",
+            version: attemptVersion,
+          });
+        }
         return this.#fail(
           run,
           "RECONCILIATION_REQUIRED",
@@ -903,21 +1007,101 @@ export class GovernorKernel {
       }
       if (reconciliation === "EXECUTED") {
         reconciledResultRef =
-          run.executionAttempt.resultRef ?? `${attemptId}:reconciled`;
+          storedAttempt?.resultRef ??
+          run.executionAttempt?.resultRef ??
+          `${attemptId}:reconciled`;
+        if (this.#attemptStore) {
+          attemptVersion += 1;
+          this.#persistAttempt({
+            attemptId,
+            runId: run.runId,
+            decisionId: decision.id,
+            actionRequestId: actionRequest.id,
+            authorizationId: authorization.id,
+            startedAt: storedAttempt?.startedAt ?? input.at,
+            status: "RECONCILED_EXECUTED",
+            resultRef: reconciledResultRef,
+            version: attemptVersion,
+          });
+        }
+      } else if (this.#attemptStore) {
+        attemptVersion += 1;
+        this.#persistAttempt({
+          attemptId,
+          runId: run.runId,
+          decisionId: decision.id,
+          actionRequestId: actionRequest.id,
+          authorizationId: authorization.id,
+          startedAt: storedAttempt?.startedAt ?? input.at,
+          status: "RECONCILED_NOT_EXECUTED",
+          version: attemptVersion,
+        });
       }
     }
 
-    run = transitionRun(run, "ACTION_EXECUTING", input.at, {
-      checkpoint: "ACTION_STARTED",
-      executionAttempt: {
+    if (
+      !reconciledResultRef &&
+      this.#attemptStore &&
+      priorStatus !== "STARTED" &&
+      priorStatus !== "PREPARED"
+    ) {
+      attemptVersion += 1;
+      const prepared: DurableExecutionAttempt = {
         attemptId,
-        startedAt: run.executionAttempt?.startedAt ?? input.at,
-        status: reconciledResultRef ? "COMPLETED" : "STARTED",
-        ...(reconciledResultRef ? { resultRef: reconciledResultRef } : {}),
-      },
-    });
+        runId: run.runId,
+        decisionId: decision.id,
+        actionRequestId: actionRequest.id,
+        authorizationId: authorization.id,
+        startedAt: input.at,
+        status: "PREPARED",
+        version: attemptVersion,
+      };
+      this.#persistAttempt(prepared);
+      run = transitionRun(run, "ACTION_EXECUTING", input.at, {
+        checkpoint: "ACTION_STARTED",
+        executionAttempt: prepared,
+      });
+      this.#persistRun(run);
+    }
+
     if (!reconciledResultRef) {
-      this.#runStore.save(run);
+      attemptVersion += 1;
+      const started: DurableExecutionAttempt = {
+        attemptId,
+        runId: run.runId,
+        decisionId: decision.id,
+        actionRequestId: actionRequest.id,
+        authorizationId: authorization.id,
+        startedAt: storedAttempt?.startedAt ?? input.at,
+        status: "STARTED",
+        version: attemptVersion,
+      };
+      this.#persistAttempt(started);
+      run = transitionRun(run, "ACTION_EXECUTING", input.at, {
+        checkpoint: "ACTION_STARTED",
+        executionAttempt: started,
+      });
+      this.#persistRun(run);
+    } else {
+      run = transitionRun(run, "ACTION_EXECUTING", input.at, {
+        checkpoint: "ACTION_STARTED",
+        executionAttempt: {
+          attemptId,
+          startedAt: storedAttempt?.startedAt ?? input.at,
+          status: "RECONCILED_EXECUTED",
+          resultRef: reconciledResultRef,
+        },
+      });
+    }
+
+    if (this.#replayMode && !reconciledResultRef) {
+      return this.#fail(
+        run,
+        "RECONCILIATION_REQUIRED",
+        input.at,
+        GovernanceErrorCode.RECONCILIATION_REQUIRED,
+        "replay mode cannot invoke external side effects",
+      );
     }
 
     const execution = await executeGovernedAction({
@@ -939,6 +1123,20 @@ export class GovernorKernel {
     });
 
     const success = execution.actionResult.status === "EXECUTED";
+    if (this.#attemptStore) {
+      attemptVersion += 1;
+      this.#persistAttempt({
+        attemptId,
+        runId: run.runId,
+        decisionId: decision.id,
+        actionRequestId: actionRequest.id,
+        authorizationId: authorization.id,
+        startedAt: storedAttempt?.startedAt ?? input.at,
+        status: success ? "COMPLETED" : "FAILED",
+        resultRef: execution.actionResult.resultRef,
+        version: attemptVersion,
+      });
+    }
     run = transitionRun(
       run,
       success ? "ACTION_SUCCEEDED" : "ACTION_FAILED",
@@ -948,8 +1146,8 @@ export class GovernorKernel {
         checkpoint: "ACTION_COMPLETED",
         executionAttempt: {
           attemptId,
-          startedAt: run.executionAttempt?.startedAt ?? input.at,
-          status: "COMPLETED",
+          startedAt: storedAttempt?.startedAt ?? input.at,
+          status: success ? "COMPLETED" : "FAILED",
           resultRef: execution.actionResult.resultRef,
         },
       },
@@ -962,6 +1160,7 @@ export class GovernorKernel {
       provenance: input.provenance,
       idempotencyKey: input.idempotencyKey,
       failed: !success,
+      runId: input.ids.runId,
     });
 
     return this.#evaluateAndDispose(input, run, decision, execution.actionResult);
@@ -1002,6 +1201,7 @@ export class GovernorKernel {
       outcome,
       provenance: input.provenance,
       idempotencyKey: input.idempotencyKey,
+      runId: input.ids.runId,
     });
 
     run = transitionRun(run, "EVALUATING", input.at);
@@ -1043,6 +1243,7 @@ export class GovernorKernel {
       disposition,
       provenance: input.provenance,
       idempotencyKey: input.idempotencyKey,
+      runId: input.ids.runId,
     });
 
     const finalState: KernelState =
@@ -1069,7 +1270,7 @@ export class GovernorKernel {
       disposition,
       checkpoint: checkpointForState(state) ?? run.checkpoint,
     });
-    this.#runStore.save(finalRun);
+    this.#persistRun(finalRun);
     return {
       ok: ![
         "AUTHORITY_DENIED",
@@ -1093,7 +1294,7 @@ export class GovernorKernel {
     message: string,
   ): GovernorRunResult {
     const finalRun = transitionRun(run, state, at);
-    this.#runStore.save(finalRun);
+    this.#persistRun(finalRun);
     this.#claims.release(finalRun.resourceKey, finalRun.runId);
     return { ok: false, run: finalRun, state, code, message };
   }

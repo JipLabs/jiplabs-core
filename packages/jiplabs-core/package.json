@@ -2,7 +2,7 @@
   "name": "@jiplabs/core",
   "version": "0.0.0",
   "private": false,
-  "description": "JipLabs Core CORE-00: domain-agnostic governance constitution, authority model, and contracts. No autonomous runtime kernel.",
+  "description": "JipLabs Core: domain-agnostic governance constitution (CORE-00), Governor Kernel (CORE-01), durable governance state (CORE-02).",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,0 +1,25 @@
+import type { ExecutionClaimStore } from "../concurrency/index.js";
+import type { GovernanceLedger } from "../ledger/index.js";
+import type { GovernanceRunStore } from "../governor/runtime-state.js";
+import type { DurableExecutionAttempt } from "../governor/runtime-state.js";
+
+export interface ExecutionAttemptStore {
+  get(attemptId: string): DurableExecutionAttempt | undefined;
+  getByRunId(runId: string): DurableExecutionAttempt | undefined;
+  save(attempt: DurableExecutionAttempt): void;
+}
+
+export interface GovernanceUnitOfWork {
+  runInTransaction<T>(work: () => T): T;
+}
+
+export interface GovernanceStorageBundle {
+  readonly ledger: GovernanceLedger;
+  readonly runStore: GovernanceRunStore;
+  readonly claimStore: ExecutionClaimStore;
+  readonly attemptStore: ExecutionAttemptStore;
+  readonly unitOfWork: GovernanceUnitOfWork;
+  close(): void;
+}
+
+export type GovernanceLedgerStore = GovernanceLedger;

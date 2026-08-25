@@ -24,6 +24,8 @@ export {
   type GovernanceRun,
   type GovernanceRunStore,
   type ExecutionAttempt,
+  type ExecutionAttemptStatus,
+  type DurableExecutionAttempt,
   type IdempotencyBinding,
 } from "./runtime-state.js";
 export {

@@ -10,11 +10,29 @@ import type { RollbackExecution } from "../rollback/index.js";
 import type { KernelState, RecoveryCheckpoint } from "./states.js";
 import type { IsoTimestamp, JsonSafeMetadata, Provenance } from "../schema.js";
 
+export type ExecutionAttemptStatus =
+  | "PREPARED"
+  | "STARTED"
+  | "COMPLETED"
+  | "FAILED"
+  | "IN_DOUBT"
+  | "RECONCILIATION_REQUIRED"
+  | "RECONCILED_EXECUTED"
+  | "RECONCILED_NOT_EXECUTED";
+
 export type ExecutionAttempt = {
   readonly attemptId: string;
   readonly startedAt: IsoTimestamp;
-  readonly status: "STARTED" | "COMPLETED" | "IN_DOUBT";
+  readonly status: ExecutionAttemptStatus;
   readonly resultRef?: string;
+};
+
+export type DurableExecutionAttempt = ExecutionAttempt & {
+  readonly runId: string;
+  readonly decisionId: string;
+  readonly actionRequestId: string;
+  readonly authorizationId: string;
+  readonly version: number;
 };
 
 export type GovernanceRun = {

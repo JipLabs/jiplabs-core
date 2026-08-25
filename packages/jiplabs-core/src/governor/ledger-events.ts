@@ -5,8 +5,18 @@ import type { Decision } from "../decisions/index.js";
 import type { CoreEvaluation } from "../evaluation/index.js";
 import type { OutcomeRecord } from "../outcomes/index.js";
 import type { Disposition } from "../disposition/index.js";
-import type { IsoTimestamp, Provenance } from "../schema.js";
+import type { IsoTimestamp, JsonSafeMetadata, Provenance } from "../schema.js";
 import { createGovernanceEvent } from "../ledger/index.js";
+
+function withRunMetadata(
+  runId: string | undefined,
+  metadata?: JsonSafeMetadata,
+): JsonSafeMetadata | undefined {
+  if (!runId && !metadata) {
+    return undefined;
+  }
+  return { ...(metadata ?? {}), ...(runId ? { runId } : {}) };
+}
 
 export function emitProposalCreated(
   ledger: GovernanceLedger,
@@ -17,6 +27,7 @@ export function emitProposalCreated(
     proposalId: string;
     idempotencyKey: string;
     provenance: Provenance;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -29,6 +40,7 @@ export function emitProposalCreated(
       idempotencyKey: `proposal:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -44,6 +56,7 @@ export function emitAuthorityChecked(
     idempotencyKey: string;
     provenance: Provenance;
     authorityGrantContentHash?: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -59,6 +72,7 @@ export function emitAuthorityChecked(
       temporalRefs: input.authorityGrantContentHash
         ? { authorityGrantContentHash: input.authorityGrantContentHash }
         : undefined,
+      metadata: withRunMetadata(input.runId, { allowed: input.allowed }),
     }),
   );
 }
@@ -72,6 +86,7 @@ export function emitDecisionMade(
     decision: Decision;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -82,6 +97,7 @@ export function emitDecisionMade(
       decision: input.decision,
       provenance: input.provenance,
       idempotencyKey: `decision:${input.idempotencyKey}`,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -95,6 +111,7 @@ export function emitActionAuthorized(
     authorization: GovernedActionAuthorization;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -112,6 +129,7 @@ export function emitActionAuthorized(
         policyContentHash: input.authorization.policyContentHash,
         authorityGrantContentHash: input.authorization.authorityRef,
       },
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -126,6 +144,7 @@ export function emitActionExecuted(
     provenance: Provenance;
     idempotencyKey: string;
     failed?: boolean;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -138,6 +157,7 @@ export function emitActionExecuted(
       idempotencyKey: `action-exec:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -151,6 +171,7 @@ export function emitOutcomeRecorded(
     outcome: OutcomeRecord;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -163,6 +184,7 @@ export function emitOutcomeRecorded(
       idempotencyKey: `outcome:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -177,6 +199,7 @@ export function emitEvaluationCompleted(
     disposition: Disposition;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -189,7 +212,7 @@ export function emitEvaluationCompleted(
       idempotencyKey: `evaluation:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
-      metadata: { disposition: input.disposition },
+      metadata: withRunMetadata(input.runId, { disposition: input.disposition }),
     }),
   );
 }
@@ -203,6 +226,7 @@ export function emitHumanApprovalRequested(
     decisionId: string;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -215,6 +239,7 @@ export function emitHumanApprovalRequested(
       idempotencyKey: `human-approval-request:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -228,6 +253,7 @@ export function emitHumanApproved(
     decisionId: string;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -240,6 +266,7 @@ export function emitHumanApproved(
       idempotencyKey: `human-approved:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -253,6 +280,7 @@ export function emitHumanRejected(
     decisionId: string;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -265,6 +293,7 @@ export function emitHumanRejected(
       idempotencyKey: `human-rejected:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
@@ -278,6 +307,7 @@ export function emitRollbackTriggered(
     decisionId: string;
     provenance: Provenance;
     idempotencyKey: string;
+    runId?: string;
   },
 ): void {
   ledger.append(
@@ -290,6 +320,7 @@ export function emitRollbackTriggered(
       idempotencyKey: `rollback-trigger:${input.idempotencyKey}`,
       sequence: 0,
       provenance: input.provenance,
+      metadata: withRunMetadata(input.runId),
     }),
   );
 }
