@@ -1,88 +1,48 @@
 # @jiplabs/core
 
-Governance kernel for governed autonomous systems.
+Governance kernel for governed autonomous and semi-autonomous systems.
 
-**Status:** 0.3.0 · **License:** MIT · **Node:** >=22.5.0
+**Status:** `1.0.0-rc.1` (release candidate preparation — not a published 1.0) · **License:** MIT · **Node:** >=22.5.0
 
-This package is domain-agnostic. JipComply, Quinté Lab, and future JipLabs products consume it through adapters; the package itself contains **no** product-specific domain logic.
+This package is domain-agnostic. Product adapters depend on Core. Core does not depend on any product.
 
-## What it is
+---
 
-A domain-agnostic governance kernel for governed autonomous systems.
+## What problem this solves
 
-### Core lifecycle
+When software **observes, decides, and acts**, those steps are easy to collapse: a model output becomes an action; a successful write becomes “the right decision.” That is unsafe for autonomous systems.
 
-```
-Proposal
-  → Authority
-  → Policy
-  → Decision
-  → Action Authorization
-  → Execution
-  → Outcome
-  → Evaluation
-  → Disposition / Rollback
-```
+`@jiplabs/core` makes the following distinctions **explicit, enforceable, and reconstructable**:
 
-Operational failures can become permanent evaluation cases through the CORE-03 evaluation corpus (see below).
+- who may decide (authority)
+- under which rules (policy + version)
+- based on what was known (evidence)
+- what was intended (proposal) vs what was decided (decision)
+- whether an action was authorized
+- what actually happened (outcome)
+- whether that outcome was correct (evaluation)
+- how humans intervene (override / rollback) without rewriting history
 
-### Core principles
+## When to use it
 
-- Authority is explicit — no implicit global power.
-- Human approval is policy-driven, not globally required.
-- Human override remains available when authorized.
-- Decisions and execution are separate stages.
-- Rollback is first-class.
-- History is append-only.
-- Historical decisions are reconstructable from ledger evidence.
-- Ambiguous external side effects fail closed.
-- Domain semantics remain outside Core (injected adapters).
+Use Core when a system must **govern decisions** — especially if those decisions may later be audited, replayed, evaluated, overridden, or rolled back.
 
-## Current status
+Typical adapters: predictive/autonomous product loops, regulatory/compliance promotion, any domain that needs authority-bound policy gates.
 
-| Milestone | Scope |
-|---|---|
-| **CORE-00** | Governance constitution — actors, authority, policies, evidence, decisions, rollback, override, ledger, trace |
-| **CORE-01** | Governor Kernel — operational runtime, action authorization, human approval, rollback execution, idempotency, recovery |
-| **CORE-02** | Durable governance state — SQLite persistence, restart recovery, replay, reconciliation, integrity verification, migrations |
-| **CORE-03** | Evaluation corpus — permanent evaluation cases, versioned suites, targets/runs, baselines, regression comparison, learning signals, governance recommendations |
-| **CORE-04** | Agent, model & responsibility governance — governed components, capability declarations, qualification, eligibility, responsibility assignment, selection/fallback |
+## When not to use it
 
-CORE-05 and beyond are not included in this release.
+Do **not** use Core as:
 
-### CORE-03 — Evaluation Corpus
+- an AI model or agent framework
+- a workflow/orchestration product
+- a domain rule engine (your product still owns domain semantics)
+- a database (SQLite here is a reference persistence adapter)
+- an application framework
+- a guarantee that the domain model is correct
 
-CORE-03 converts operational outcomes into durable, versioned evaluation knowledge:
+Core governs the **decision process**. It does not make a horse race, a tax rule, or a forecast true.
 
-- **Permanent evaluation cases** — admitted from candidates with provenance preserved
-- **Versioned evaluation suites** — immutable once activated
-- **Evaluation targets and runs** — observational mode only
-- **Baselines** — immutable reference runs for comparison
-- **Regression comparison** — deterministic IMPROVED / UNCHANGED / REGRESSED / INCOMPARABLE assessments
-- **Learning signals** — structured evidence (e.g. regression detected)
-- **Governance recommendations** — guidance such as investigate or expand coverage
-
-Learning signals and governance recommendations **do not** automatically rewrite policies, authority grants, or production behavior. They are inputs to governed decision paths — not self-modification.
-
-### CORE-04 — Agent, Model & Responsibility Governance
-
-CORE-04 governs which agents, models, and other intelligence components may receive which responsibilities:
-
-- **GovernedComponent** — generic abstraction (AGENT, MODEL, RULE_ENGINE, …)
-- **CapabilityDeclaration** — namespaced capability claims (not authority)
-- **QualificationRecord** — evidence-backed qualification (consumes CORE-03 evaluation evidence)
-- **ResponsibilityEligibility** — deterministic eligibility evaluation
-- **ResponsibilityAssignment** — governed assignment (separate from execution)
-- **Component selection & fallback** — policy-driven, provider-neutral
-
-Capability claims, qualifications, and recommendations **do not** automatically grant authority or assign responsibility. Assignment requires explicit authority and policy. Regression signals may propose demotion but cannot bypass governance.
-
-> **Identity is not authority.**  
-> **Capability is not qualification.**  
-> **Qualification is not assignment.**  
-> **Assignment is not action authorization.**
-
-Core does not call or depend on any specific LLM provider.
+---
 
 ## Install
 
@@ -90,27 +50,50 @@ Core does not call or depend on any specific LLM provider.
 npm install @jiplabs/core
 ```
 
-## Minimal usage (Governor Kernel)
+Import only from `@jiplabs/core`. Deep imports into `dist/` are not part of the contract.
 
-Domain-agnostic example showing actor, authority grant, policy, proposal, evidence, kernel, domain executor, and outcome evaluator:
+CORE-03 (evaluation corpus) and CORE-04 (component registry) are **experimental**. Prefer `@jiplabs/core/experimental` when you depend on them deliberately. They remain available from the root for 0.3.0 compatibility.
+
+---
+
+## Governance lifecycle
+
+```text
+Observation / Evidence
+→ Proposal
+→ Authority Check
+→ Policy Evaluation
+→ Decision
+→ Action Authorization
+→ Action
+→ Outcome
+→ Evaluation
+→ Keep / Follow-up / Rollback
+```
+
+A proposal is not a decision. A decision is not an execution. Execution success is not decision correctness.
+
+---
+
+## Smallest working example (authorize-only)
+
+This is the path real product adapters use. It produces a **Decision**. It does not execute a domain action.
 
 ```typescript
 import {
   activatePolicyVersion,
+  buildDecisionTrace,
   createActor,
   createAuthority,
   createAuthorityGrant,
   createDecisionProposal,
   createEvidence,
   createPolicyVersion,
-  GovernorKernel,
-  InMemoryGovernanceLedger,
-  type DomainAdapterBundle,
-  type PolicyGate,
+  evaluateDomainDecisionAuthorization,
 } from "@jiplabs/core";
 
-const AT = new Date().toISOString();
-const provenance = { actorId: "bootstrap", source: "example" };
+const AT = "2026-08-25T12:00:00.000Z";
+const provenance = { actorId: "governor-1", source: "example" };
 const resource = { domain: "example-domain", resourceType: "entity" };
 
 const actor = createActor({
@@ -124,7 +107,7 @@ const actor = createActor({
 
 const authority = createAuthority({
   id: "auth-1",
-  code: "EXAMPLE_EXECUTE",
+  code: "EXAMPLE_DECIDE",
   scopes: ["EXECUTE_ACTION"],
   createdAt: AT,
   provenance,
@@ -137,25 +120,16 @@ const grant = createAuthorityGrant({
   scopes: ["EXECUTE_ACTION"],
   resource,
   validFrom: AT,
-  validUntil: "2027-01-01T00:00:00.000Z",
+  validUntil: null,
   issuerActorId: "issuer",
   createdAt: AT,
   provenance,
 });
 
-const gate: PolicyGate = {
-  id: "g1",
-  code: "readiness",
-  operator: "EQ",
-  expected: "PASS",
-  mandatory: true,
-  evidenceKind: "readiness",
-};
-
 const policyVersion = activatePolicyVersion(
   createPolicyVersion({
     id: "pv-1",
-    policyId: "policy-1",
+    policyId: "example-policy",
     version: "1.0.0",
     domain: "example-domain",
     decisionType: "EXAMPLE",
@@ -164,7 +138,14 @@ const policyVersion = activatePolicyVersion(
     applicableActorAuthority: [actor.code],
     requiredAuthorityScope: "EXECUTE_ACTION",
     requiredEvidence: ["readiness"],
-    gates: [gate],
+    gates: [{
+      id: "g1",
+      code: "readiness",
+      operator: "EQ",
+      expected: "PASS",
+      mandatory: true,
+      evidenceKind: "readiness",
+    }],
     decisionOutcomes: { onPass: "APPROVE", onFail: "REJECT" },
     failureBehavior: "BLOCK",
     rollbackRequirements: { required: false },
@@ -196,8 +177,8 @@ const proposal = createDecisionProposal({
   actorId: actor.id,
   action: "EXECUTE",
   subject: { type: "entity", id: "entity-1", domain: "example-domain" },
-  policyId: "policy-1",
-  policyVersion: "1.0.0",
+  policyId: policyVersion.policyId,
+  policyVersion: policyVersion.version,
   domain: "example-domain",
   decisionType: "EXAMPLE",
   evidenceRefs: ["ev-1"],
@@ -205,126 +186,101 @@ const proposal = createDecisionProposal({
   provenance,
 });
 
-const adapter: DomainAdapterBundle = {
-  domain: "example-domain",
-  observationProvider: { domain: "example-domain", fetchObservations: () => [] },
-  policyProvider: { domain: "example-domain", resolvePolicyVersion: () => policyVersion },
-  evidenceProvider: { domain: "example-domain", collectEvidence: () => evidence },
-  actionExecutor: {
+const result = evaluateDomainDecisionAuthorization({
+  adapter: {
     domain: "example-domain",
-    execute: async () => ({ status: "EXECUTED", resultRef: "result-1" }),
-  },
-  outcomeEvaluator: {
-    domain: "example-domain",
-    evaluate: () => ({ verdict: "CORRECT", rationale: "Expected outcome" }),
-  },
-};
-
-const kernel = new GovernorKernel({ ledger: new InMemoryGovernanceLedger() });
-
-const result = await kernel.run({
-  idempotencyKey: "idem-1",
-  ids: {
-    runId: "run-1",
-    decisionId: "run-1:decision",
-    explanationId: "run-1:explanation",
-    actionRequestId: "run-1:action-request",
-    authorizationId: "run-1:authorization",
-    actionResultId: "run-1:action-result",
-    outcomeId: "run-1:outcome",
-    evaluationId: "run-1:evaluation",
+    observationProvider: { domain: "example-domain", fetchObservations: () => [] },
+    policyProvider: { domain: "example-domain", resolvePolicyVersion: () => policyVersion },
+    evidenceProvider: { domain: "example-domain", collectEvidence: () => evidence },
   },
   actor,
-  executorActorId: "executor-1",
   authority,
   grant,
   proposal,
   policyVersion,
   evidence,
-  rollbackPlan: null,
   resource,
-  adapter,
   at: AT,
-  provenance,
+  decisionId: "dec-1",
+  explanationId: "exp-1",
 });
 
-console.log(result.state, result.ok);
-```
-
-## Minimal usage (Evaluation Corpus)
-
-```typescript
-import {
-  EvaluationCorpus,
-  InMemoryEvaluationCorpusStore,
-  createEvaluationCaseCandidate,
-} from "@jiplabs/core";
-
-const AT = new Date().toISOString();
-const provenance = { actorId: "evaluator", source: "example" };
-
-const corpus = new EvaluationCorpus({
-  store: new InMemoryEvaluationCorpusStore(),
-  at: AT,
-  provenance,
-});
-
-corpus.addCandidate(
-  createEvaluationCaseCandidate({
-    id: "cand-1",
-    candidateId: "cand-1",
-    domain: "example-domain",
-    title: "Reference failure case",
-    provenance: { sourceKind: "MANUAL_REFERENCE" },
-    inputContextRefs: [],
-    evidenceRefs: [],
+if (result.ok) {
+  const trace = buildDecisionTrace({
+    id: "trace-1",
+    decisionId: result.decision.id,
     createdAt: AT,
-    provenanceEnvelope: provenance,
-  }),
-);
+    provenance,
+    proposal,
+    decision: result.decision,
+    explanation: result.explanation,
+    policyVersion,
+    evidence,
+  });
+  console.log(result.decision.decisionValue, trace.policyId);
+}
 ```
 
-For durable persistence across restarts, use `openNodeSqliteGovernanceStorage` (Node >=22.5 with `node:sqlite`). The returned bundle includes `corpusStore` for evaluation history (schema migration 002).
+Adapters may supply evidence directly. `fetchObservations` may return `[]` when observations are already bound into evidence.
 
-## Public API
+Persist `result.decision.governanceSnapshot` plus the evidence values used at `at` if you will later reconstruct or compare historically. Use `reconstructDecisionFromSnapshot`. Do not replay against **current** evidence and call that the original decision.
 
-| Area | Exports |
+## Full lifecycle (Governor Kernel)
+
+`GovernorKernel` is the stable **full-lifecycle** runtime: decision **and** governed execution, outcomes, evaluation, disposition, rollback. Use it when Core should run the action executor. It is not required for authorize-only integrations.
+
+See [docs/INTEGRATION-GUIDE.md](../../docs/INTEGRATION-GUIDE.md).
+
+---
+
+## What Core guarantees
+
+- Authority is explicit. No implicit global power.
+- Policy is versioned; activated versions are immutable; supersession preserves history.
+- Decisions bind policy/authority/evidence snapshots.
+- History is append-only. Override and revocation do not rewrite an earlier valid event.
+- Human approval is **policy-driven**, not globally required. Humans operate **on** the loop.
+- Domain semantics stay in adapters.
+
+## What Core does not guarantee
+
+- That a domain prediction, compliance assessment, or model is correct
+- That a product persisted Core snapshots (that is adapter work)
+- Stable SemVer for **experimental** exports (CORE-03, CORE-04)
+- Production maturity of every optional subsystem equally — authorize-only is empirically proven; kernel durable execution is proven in tests; component governance is experimental
+
+---
+
+## Stable vs experimental
+
+| Surface | Status | Import |
+|---|---|---|
+| Constitution, authority, policy, evidence, proposal/decision, authorize-only API, kernel, ledger/trace, durable SQLite adapter | **STABLE_1_0** | `@jiplabs/core` |
+| Evaluation corpus (CORE-03) | **EXPERIMENTAL** | `@jiplabs/core/experimental` (also on root) |
+| Component / responsibility registry (CORE-04) | **EXPERIMENTAL** | `@jiplabs/core/experimental` (also on root) |
+
+See [docs/API-STABILITY.md](../../docs/API-STABILITY.md).
+
+---
+
+## Deeper documentation
+
+| Topic | Location |
 |---|---|
-| Constitution | Actors, authority, policies, evidence, decisions, actions, outcomes, rollback, override |
-| Ledger & trace | `InMemoryGovernanceLedger`, trace reconstruction, append-only assertions |
-| Governor Kernel | `GovernorKernel`, run store interfaces, recovery checkpoints, idempotency fingerprints |
-| Authorization & execution | `GovernedActionAuthorization`, `executeGovernedAction`, binding assertions |
-| Domain adapters | `DomainAdapterBundle` and related port interfaces |
-| Durable state | `openNodeSqliteGovernanceStorage`, replay, integrity verification, reconstruction |
-| Evaluation corpus | `EvaluationCorpus`, case admission, suites, baselines, regression, learning signals |
+| Architecture | [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) |
+| Integration | [docs/INTEGRATION-GUIDE.md](../../docs/INTEGRATION-GUIDE.md) |
+| Compatibility / SemVer | [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) |
+| 0.3.0 → 1.0 migration | [docs/MIGRATION-0.3-TO-1.0.md](../../docs/MIGRATION-0.3-TO-1.0.md) |
+| Constitution | [docs/jiplabs-core/CORE-00-CONSTITUTION.md](../../docs/jiplabs-core/CORE-00-CONSTITUTION.md) |
+| API inventory | [docs/API-INVENTORY.md](../../docs/API-INVENTORY.md) |
 
-Import only from `@jiplabs/core`. Deep imports into `dist/` subpaths are not part of the supported contract.
-
-## Non-goals
-
-- Product-specific compliance or domain rule packs
-- LLM reasoning or external service orchestration
-- Automatic policy or authority mutation from learning signals
-- Agent/model routing (CORE-04)
-- Control plane or SaaS API
-
-## Compatibility
-
-See [CHANGELOG.md](./CHANGELOG.md) for version history and the 0.x compatibility policy.
+---
 
 ## Development
-
-From the repository root:
 
 ```bash
 pnpm install
 pnpm test
 pnpm build
 pnpm lint
-```
-
-## Tests
-
-```bash
-pnpm --filter @jiplabs/core test
 ```
