@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -71,6 +71,7 @@ import {
   evaluateResponsibilityEligibility,
   openNodeSqliteGovernanceStorage,
 } from "@jiplabs/core";
+import { EvaluationCorpus as ExperimentalCorpus } from "@jiplabs/core/experimental";
 
 const AT = "2026-08-25T12:00:00.000Z";
 const provenance = { actorId: "consumer", source: "consumer-test" };
@@ -300,6 +301,7 @@ console.log(JSON.stringify({
     });
     return elig.outcome === "ELIGIBLE" && typeof evaluateResponsibilityEligibility === "function";
   })(),
+  experimental: typeof ExperimentalCorpus === "function",
 }));
 `,
     );
@@ -326,6 +328,7 @@ describe("consumer package (packed artifact)", () => {
         corpusCandidate: true,
         componentRegistry: true,
         componentWorkflow: true,
+        experimental: true,
       });
     } finally {
       rmSync(tarballPath, { force: true });
@@ -339,6 +342,8 @@ describe("consumer package (packed artifact)", () => {
 
       expect(entries.some((e) => e.includes("dist/index.js"))).toBe(true);
       expect(entries.some((e) => e.includes("dist/index.d.ts"))).toBe(true);
+      expect(entries.some((e) => e.includes("dist/experimental.js"))).toBe(true);
+      expect(entries.some((e) => e.includes("dist/experimental.d.ts"))).toBe(true);
       expect(entries.some((e) => e.includes("README.md"))).toBe(true);
       expect(entries.some((e) => e.includes("LICENSE"))).toBe(true);
       expect(entries.some((e) => e.includes("CHANGELOG.md"))).toBe(true);
@@ -362,6 +367,55 @@ describe("consumer package (packed artifact)", () => {
       expect(tarballContents).not.toMatch(/C:\\\\Users\\\\Admin/i);
     } finally {
       rmSync(tarballPath, { force: true });
+    }
+  });
+
+  it("TypeScript consumer compiles against packed declarations", { timeout: 60000 }, () => {
+    const { tarballPath } = buildTarball();
+    const consumerDir = mkdtempSync(join(tmpdir(), "jiplabs-core-ts-consumer-"));
+    try {
+      writeFileSync(
+        join(consumerDir, "package.json"),
+        JSON.stringify({
+          name: "jiplabs-core-ts-consumer",
+          private: true,
+          type: "module",
+          dependencies: { "@jiplabs/core": `file:${tarballPath.replace(/\\/g, "/")}` },
+        }),
+      );
+      execSync("npm install --no-package-lock", { cwd: consumerDir, stdio: "pipe" });
+      writeFileSync(
+        join(consumerDir, "consume.ts"),
+        `
+import {
+  evaluateDomainDecisionAuthorization,
+  buildDecisionTrace,
+  CORE_EXPERIMENTAL_EXPORTS,
+  type Decision,
+} from "@jiplabs/core";
+import { EvaluationCorpus } from "@jiplabs/core/experimental";
+
+const _check: typeof evaluateDomainDecisionAuthorization = evaluateDomainDecisionAuthorization;
+const _trace: typeof buildDecisionTrace = buildDecisionTrace;
+const _exp: typeof EvaluationCorpus = EvaluationCorpus;
+type _Decision = Decision;
+const names: readonly string[] = CORE_EXPERIMENTAL_EXPORTS;
+void _check; void _trace; void _exp; void names;
+`,
+      );
+      const tscCandidates = [
+        join(packageRoot, "node_modules", "typescript", "bin", "tsc"),
+        join(packageRoot, "..", "..", "node_modules", "typescript", "bin", "tsc"),
+      ];
+      const tsc = tscCandidates.find((p) => existsSync(p));
+      expect(tsc, "typescript compiler").toBeDefined();
+      execSync(
+        `node "${tsc}" --noEmit --strict --module nodenext --moduleResolution nodenext --target es2022 consume.ts`,
+        { cwd: consumerDir, stdio: "pipe" },
+      );
+    } finally {
+      rmSync(tarballPath, { force: true });
+      rmSync(consumerDir, { recursive: true, force: true });
     }
   });
 });
