@@ -19,7 +19,7 @@ Functional scope remains frozen. Public API is classified (stable vs experimenta
 | Start branch | `core-val-01-cross-domain-validation` |
 | Stabilization branch | `core-stab-01-v1-stabilization` |
 | Start SHA | `28a61498bd58575f4973a7a7e78189dd797adbbe` |
-| End SHA | branch HEAD after CORE-STAB-01 commits |
+| End SHA | `c4802100d11e165e94b32d462e00af123ebc9db0` |
 | Package version | `1.0.0-rc.1` (prepared, **not published**) |
 | npm `latest` still | `0.3.0` |
 | Node | `v24.19.0` |
