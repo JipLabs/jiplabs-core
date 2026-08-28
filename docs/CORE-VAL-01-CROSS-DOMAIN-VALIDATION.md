@@ -19,7 +19,8 @@ No `CORE_MISSING_PRIMITIVE` survived Gates 1–6. Real integrations in Quinté L
 | Start branch | `core-rel-02-v0.3.0` |
 | Validation branch | `core-val-01-cross-domain-validation` |
 | Start SHA | `fe51dbb6184d54c3445e5a63ad1b31dee73c3536` |
-| End SHA | recorded after this report is committed |
+| Report commit | `268f43e5cbc2d2d8007a59d2a2eca002bfa01c70` |
+| End SHA | branch HEAD of `core-val-01-cross-domain-validation` (SHA-stamp commit after the report) |
 | Package | `@jiplabs/core` |
 | Local package version | `0.3.0` (`packages/jiplabs-core/package.json`) |
 | npm registry version | `0.3.0` (`npm view @jiplabs/core version`) |
