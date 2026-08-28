@@ -20,8 +20,8 @@ import {
   openNodeSqliteGovernanceStorage,
   PERSISTENCE_SCHEMA_VERSION,
   validateValidatorIndependence,
+  createFallbackRelationship,
 } from "../src/index.js";
-import { createFallbackRelationship } from "../src/component-governance/factories.js";
 import { createLearningSignal, createGovernanceRecommendation } from "../src/evaluation-corpus/regression.js";
 import { ALL_MIGRATIONS } from "../src/persistence/migrations.js";
 import { buildHarness, AT, PROVENANCE, activeGrant, baseActor, baseAuthority } from "./helpers/governor-harness.js";

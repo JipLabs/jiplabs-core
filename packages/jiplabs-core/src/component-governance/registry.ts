@@ -36,6 +36,10 @@ import type {
   ResponsibilityAssignment,
 } from "./types.js";
 
+/**
+ * @experimental CORE-04 component registry. Import from `@jiplabs/core/experimental`
+ * to make the stability boundary explicit. Not covered by 1.0 SemVer.
+ */
 export class GovernedComponentRegistry {
   readonly #deps: GovernedComponentRegistryDeps;
 

@@ -4,16 +4,40 @@ All notable changes to `@jiplabs/core` are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Compatibility policy (0.x)
+## Compatibility policy
 
-Until **1.0.0**:
+Until a **published** 1.0.0:
 
-- Core remains under active R&D.
-- Breaking changes are possible but must be deliberate and documented.
-- Public API changes must follow SemVer.
-- Consumers must not rely on undocumented internal APIs or deep imports into `dist/` subpaths unless explicitly documented.
+- RC versions (`1.0.0-rc.*`) prepare the 1.0 contract but are not the final release.
+- See [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) and [docs/API-STABILITY.md](../../docs/API-STABILITY.md).
 
-After **1.0.0**, accidental breaking changes are unacceptable.
+From **1.0.0** (when published):
+
+- Accidental breaking changes to **stable** exports are unacceptable.
+- Experimental exports (CORE-03, CORE-04) may change in a minor 1.x release.
+- Consumers must not rely on deep imports into `dist/` subpaths.
+
+## 1.0.0-rc.1 — 2026-08-27
+
+Stabilization RC. **Not published.** No new functional primitives.
+
+### Added
+
+- Explicit `STABLE_1_0` vs `EXPERIMENTAL` classification (`CORE_EXPERIMENTAL_EXPORTS`)
+- Subpath `@jiplabs/core/experimental`
+- Root exports `createFallbackRelationship`, `createReplacementProposal` (experimental)
+- 1.0 conformance suite and domain-neutral reference consumers
+- Integration, architecture, compatibility, and 0.3→1.0 migration docs
+
+### Changed
+
+- README leads with authorize-only (`evaluateDomainDecisionAuthorization`); `GovernorKernel` documented as the full-lifecycle runtime
+- CORE-03 and CORE-04 marked experimental
+- Constitutional vs runtime outcome/evaluation types documented (not merged)
+
+### Migration
+
+0.3.0 root imports remain valid. See [docs/MIGRATION-0.3-TO-1.0.md](../../docs/MIGRATION-0.3-TO-1.0.md).
 
 ## 0.3.0 — 2026-08-25
 

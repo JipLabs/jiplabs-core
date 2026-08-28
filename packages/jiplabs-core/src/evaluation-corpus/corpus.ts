@@ -38,6 +38,10 @@ import {
   createEvaluationRun,
 } from "./runs.js";
 
+/**
+ * @experimental CORE-03 evaluation corpus. Import from `@jiplabs/core/experimental`
+ * to make the stability boundary explicit. Not covered by 1.0 SemVer.
+ */
 export class EvaluationCorpus {
   readonly #deps: EvaluationCorpusDeps;
 

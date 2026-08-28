@@ -2,6 +2,16 @@ export { GovernanceError, GovernanceErrorCode } from "./errors.js";
 export type { GovernanceErrorCode as CoreGovernanceErrorCode } from "./errors.js";
 
 export {
+  CORE_API_CHANNEL,
+  CORE_EXPERIMENTAL_EXPORTS,
+  CORE_RELEASE_LINE,
+  coreApiStability,
+  isCoreExperimentalExport,
+  type CoreApiStability,
+  type CoreExperimentalExport,
+} from "./api-stability.js";
+
+export {
   CORE_SCHEMA_VERSION,
   type CoreSchemaVersion,
   type EntityEnvelope,
@@ -300,6 +310,8 @@ export {
   createQualificationRecord,
   createResponsibilityEligibility,
   createResponsibilityAssignment,
+  createFallbackRelationship,
+  createReplacementProposal,
   evaluateResponsibilityEligibility,
   validateValidatorIndependence,
   buildComponentGovernanceTraceRefs,
@@ -324,4 +336,6 @@ export {
   type AssignmentMode,
   type ComponentRole,
   type ValidatorIndependencePolicy,
+  type FallbackRelationship,
+  type ReplacementProposal,
 } from "./component-governance/index.js";

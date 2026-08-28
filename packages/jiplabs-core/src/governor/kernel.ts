@@ -244,6 +244,17 @@ function withDecisionStatus(decision: Decision, status: Decision["status"]): Dec
   });
 }
 
+/**
+ * Stable 1.0 **full-lifecycle** runtime.
+ *
+ * Orchestrates proposal → authority → policy → decision → action authorization
+ * → execution → outcome → evaluation → disposition / rollback.
+ *
+ * Product adapters that only need a governed decision (no Core-managed
+ * execution) should call {@link evaluateDomainDecisionAuthorization} instead.
+ * Using the kernel is valid and supported; it is not required for authorize-only
+ * integrations.
+ */
 export class GovernorKernel {
   readonly #runStore: GovernanceRunStore;
   readonly #ledger: GovernanceLedger;

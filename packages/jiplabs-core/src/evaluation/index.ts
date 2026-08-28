@@ -14,6 +14,10 @@ export type CoreEvaluationVerdict =
   | "PENDING"
   | "NOT_EVALUABLE";
 
+/**
+ * Runtime kernel evaluation. Distinct from constitutional {@link Evaluation}
+ * (`KEEP` / `ROLLBACK` / …). Map domain adapter verdicts with {@link mapDomainVerdict}.
+ */
 export type CoreEvaluation = EntityEnvelope & {
   readonly decisionId: string;
   readonly outcomeId: string;

@@ -131,8 +131,15 @@ export type EvaluateDomainDecisionAuthorizationInput = {
 export type EvaluateDomainDecisionAuthorizationResult = DecisionEvaluationResult;
 
 /**
- * CORE-00: deterministically evaluate whether a domain proposal is authorized.
- * Does not authorize or execute actions — that belongs to CORE-01.
+ * Primary 1.0 **authorize-only** integration API.
+ *
+ * Deterministically evaluates whether a domain proposal is authorized under
+ * authority + policy + evidence. This is the path used by real product
+ * adapters. It does **not** authorize or execute actions — that belongs to
+ * {@link GovernorKernel} / CORE-01.
+ *
+ * A successful result is a Decision, not an execution, not an outcome, and
+ * not proof that the domain model is correct.
  */
 export function evaluateDomainDecisionAuthorization(
   input: EvaluateDomainDecisionAuthorizationInput,

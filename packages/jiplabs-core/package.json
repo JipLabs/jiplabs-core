@@ -1,6 +1,6 @@
 {
   "name": "@jiplabs/core",
-  "version": "0.3.0",
+  "version": "1.0.0-rc.1",
   "private": false,
   "description": "Governance kernel for governed autonomous systems — authority, policy, evidence, decisions, execution authorization, audit, rollback, durable recovery, evaluation corpus and component governance.",
   "license": "MIT",
@@ -40,6 +40,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./experimental": {
+      "types": "./dist/experimental.d.ts",
+      "import": "./dist/experimental.js",
+      "default": "./dist/experimental.js"
     }
   },
   "files": [

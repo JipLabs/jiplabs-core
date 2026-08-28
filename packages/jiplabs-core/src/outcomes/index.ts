@@ -15,6 +15,11 @@ export type OutcomeKind =
   | "UNKNOWN"
   | "PENDING";
 
+/**
+ * Constitutional CORE-00 observation of an action result.
+ * Runtime kernel runs emit {@link OutcomeRecord}, which adds an outcome kind.
+ * Both remain part of the 1.0 surface; do not treat them as interchangeable.
+ */
 export type Outcome = EntityEnvelope & {
   readonly decisionId: string;
   readonly actionResultId: string;
@@ -24,7 +29,7 @@ export type Outcome = EntityEnvelope & {
   readonly metadata?: JsonSafeMetadata;
 };
 
-/** CORE-01 outcome record with execution result classification. */
+/** CORE-01 runtime outcome record with execution-result classification. */
 export type OutcomeRecord = EntityEnvelope & {
   readonly decisionId: string;
   readonly actionResultId: string;
@@ -41,6 +46,11 @@ export type EvaluationVerdict =
   | "FOLLOW_UP"
   | "INCONCLUSIVE";
 
+/**
+ * Constitutional CORE-00 evaluation (KEEP / ROLLBACK / FOLLOW_UP / INCONCLUSIVE).
+ * Runtime kernel runs emit {@link CoreEvaluation} with a finer verdict set.
+ * Map between them with `mapDomainVerdict`; do not collapse the types.
+ */
 export type Evaluation = EntityEnvelope & {
   readonly decisionId: string;
   readonly outcomeId: string;
