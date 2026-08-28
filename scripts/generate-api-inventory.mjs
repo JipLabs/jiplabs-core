@@ -17,7 +17,7 @@ const expSrc = readFileSync("packages/jiplabs-core/src/api-stability.ts", "utf8"
 const expSet = new Set(
   [...expSrc.matchAll(/"([A-Za-z0-9_]+)"/g)]
     .map((m) => m[1])
-    .filter((n) => !["1.0", "rc", "STABLE_1_0", "EXPERIMENTAL"].includes(n)),
+    .filter((n) => !["1.0", "rc", "stable", "STABLE_1_0", "EXPERIMENTAL"].includes(n)),
 );
 
 const all = [...names].sort();
@@ -110,9 +110,9 @@ function cat(n) {
   return "other";
 }
 
-let md = `# Public API inventory — @jiplabs/core 1.0.0-rc.1
+let md = `# Public API inventory — @jiplabs/core 1.0.0
 
-Classification: every root export is either \`STABLE_1_0\` or \`EXPERIMENTAL\`. None are internalized or removed in this RC.
+Classification: every root export is either \`STABLE_1_0\` or \`EXPERIMENTAL\`. None are internalized or removed in 1.0.0.
 
 | Counts | |
 |---|---|

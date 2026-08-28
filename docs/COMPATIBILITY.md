@@ -2,7 +2,7 @@
 
 ## SemVer (from 1.0.0 onward)
 
-Until 1.0.0 is **published**, 0.x / RC versions may still change. This document is the contract the RC is written against.
+From published **1.0.0**, this is the SemVer contract for `@jiplabs/core`. 0.x versions had no strict compatibility promise.
 
 ### PATCH
 

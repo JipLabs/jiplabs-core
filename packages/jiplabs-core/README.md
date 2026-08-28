@@ -2,7 +2,7 @@
 
 Governance kernel for governed autonomous and semi-autonomous systems.
 
-**Status:** `1.0.0-rc.1` (release candidate preparation — not a published 1.0) · **License:** MIT · **Node:** >=22.5.0
+**Status:** `1.0.0` (first stable release) · **License:** MIT · **Node:** >=22.5.0
 
 This package is domain-agnostic. Product adapters depend on Core. Core does not depend on any product.
 

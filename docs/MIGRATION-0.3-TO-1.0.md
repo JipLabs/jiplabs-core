@@ -9,7 +9,7 @@
 - `createFallbackRelationship` / `createReplacementProposal` on the root (experimental)
 - stability helpers: `CORE_EXPERIMENTAL_EXPORTS`, `isCoreExperimentalExport`, `coreApiStability`
 
-No 0.3.0 root export is removed in `1.0.0-rc.1`.
+No 0.3.0 root export is removed in `1.0.0`.
 
 ## Product adapters (Quinté Lab, JipComply)
 
@@ -38,4 +38,4 @@ No removal. Use:
 
 ## Git tag for 0.3.0
 
-The published npm `0.3.0` corresponds to commit `fe51dbb6184d54c3445e5a63ad1b31dee73c3536`. CORE-STAB-01 creates local tag `@jiplabs/core-v0.3.0` on that commit. Pushing tags is a CORE-REL-1.0 / ops action.
+The published npm `0.3.0` corresponds to commit `fe51dbb6184d54c3445e5a63ad1b31dee73c3536`. Local tag `@jiplabs/core-v0.3.0` points at that commit. `@jiplabs/core-v1.0.0` tags the 1.0.0 release commit.

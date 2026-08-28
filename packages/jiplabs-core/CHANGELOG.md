@@ -6,16 +6,47 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## Compatibility policy
 
-Until a **published** 1.0.0:
+From published **1.0.0**:
 
-- RC versions (`1.0.0-rc.*`) prepare the 1.0 contract but are not the final release.
-- See [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) and [docs/API-STABILITY.md](../../docs/API-STABILITY.md).
-
-From **1.0.0** (when published):
-
-- Accidental breaking changes to **stable** exports are unacceptable.
+- Accidental breaking changes to **stable** exports are a major-version event.
 - Experimental exports (CORE-03, CORE-04) may change in a minor 1.x release.
 - Consumers must not rely on deep imports into `dist/` subpaths.
+
+See [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) and [docs/API-STABILITY.md](../../docs/API-STABILITY.md).
+
+## 1.0.0 — 2026-08-27
+
+First **stable** JipLabs Core release. No new functional primitives versus `0.3.0` / `1.0.0-rc.1`.
+
+Core governs **decision processes** (authority, policy, evidence, proposal, decision, authorization, execution, outcome, evaluation, override, rollback). It does **not** guarantee that a product’s domain model is correct, and it is not a certification or formal-verification result.
+
+### Included
+
+- Governed decision lifecycle with explicit proposal ≠ decision ≠ execution ≠ outcome ≠ evaluation
+- Authority grants, policy versions/gates, evidence binding, decision snapshots
+- Authorize-only primary API: `evaluateDomainDecisionAuthorization`
+- Full-lifecycle runtime: `GovernorKernel` (stable, not the default product path)
+- Durable reference persistence (SQLite via `node:sqlite`), append-only ledger, recovery
+- Override and rollback as **new** governed events (history is not rewritten)
+- Cross-domain validation evidence (Quinté Lab shadow, JipComply readiness) — see CORE-VAL-01
+- SemVer contract for stable exports from this version forward
+
+### Stable vs experimental
+
+- **203** `STABLE_1_0` root exports
+- **64** `EXPERIMENTAL` exports (CORE-03 evaluation corpus, CORE-04 component registry)
+- Experimental subpath: `@jiplabs/core/experimental`
+- `CORE_API_CHANNEL` is `"stable"`; `CORE_RELEASE_LINE` is `"1.0"`
+
+### Validated use
+
+Heterogeneous products consumed Core without missing primitives (CORE-VAL-01). That does **not** claim universal production maturity of every subsystem. Authorize-only is empirically proven in live adapters; durable kernel execution is proven in tests; CORE-03/04 remain experimental.
+
+### Compatibility
+
+- 0.3.0 root imports remain valid (additive 1.0 surface)
+- Migration: [docs/MIGRATION-0.3-TO-1.0.md](../../docs/MIGRATION-0.3-TO-1.0.md)
+- Known non-blocking limits: experimental corpus/registry; evidence `contentHash` hardening; products own persistence of snapshots
 
 ## 1.0.0-rc.1 — 2026-08-27
 

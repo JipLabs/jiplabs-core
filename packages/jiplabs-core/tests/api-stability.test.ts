@@ -3,7 +3,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  CORE_API_CHANNEL,
   CORE_EXPERIMENTAL_EXPORTS,
+  CORE_RELEASE_LINE,
   coreApiStability,
   isCoreExperimentalExport,
 } from "../src/index.js";
@@ -29,6 +31,11 @@ describe("CORE-STAB-01 API stability classification", () => {
   const publicExports = extractPublicExports(
     readFileSync(join(srcRoot, "index.ts"), "utf8"),
   );
+
+  it("publishes the stable 1.0 channel metadata", () => {
+    expect(CORE_RELEASE_LINE).toBe("1.0");
+    expect(CORE_API_CHANNEL).toBe("stable");
+  });
 
   it("classifies every public root export", () => {
     expect(publicExports.length).toBeGreaterThan(200);

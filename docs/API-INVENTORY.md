@@ -1,6 +1,6 @@
-# Public API inventory — @jiplabs/core 1.0.0-rc.1
+# Public API inventory — @jiplabs/core 1.0.0
 
-Classification: every root export is either `STABLE_1_0` or `EXPERIMENTAL`. None are internalized or removed in this RC.
+Classification: every root export is either `STABLE_1_0` or `EXPERIMENTAL`. None are internalized or removed in 1.0.0.
 
 | Counts | |
 |---|---|

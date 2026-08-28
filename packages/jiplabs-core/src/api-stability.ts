@@ -9,7 +9,7 @@
  * Every other public export from `@jiplabs/core` is `STABLE_1_0`.
  */
 export const CORE_RELEASE_LINE = "1.0" as const;
-export const CORE_API_CHANNEL = "rc" as const;
+export const CORE_API_CHANNEL = "stable" as const;
 
 export type CoreApiStability = "STABLE_1_0" | "EXPERIMENTAL";
 

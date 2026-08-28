@@ -2,7 +2,7 @@
 
 Domain-agnostic governance constitution and runtime for governed autonomous systems.
 
-Package: [`@jiplabs/core`](packages/jiplabs-core) — current line: **1.0.0-rc.1** (stabilization; not a published 1.0).
+Package: [`@jiplabs/core`](packages/jiplabs-core) — current line: **1.0.0**.
 
 ```text
 Product
@@ -16,9 +16,9 @@ Core never depends on a product.
 
 | Layer | Status |
 |---|---|
-| CORE-00 Constitution | Stable 1.0 candidate |
-| CORE-01 Governor Kernel | Stable 1.0 candidate |
-| CORE-02 Durable governance | Stable 1.0 candidate |
+| CORE-00 Constitution | Stable 1.0 |
+| CORE-01 Governor Kernel | Stable 1.0 |
+| CORE-02 Durable governance | Stable 1.0 |
 | CORE-03 Evaluation corpus | Experimental |
 | CORE-04 Component registry | Experimental |
 

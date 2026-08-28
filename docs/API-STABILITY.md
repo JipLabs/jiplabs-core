@@ -48,7 +48,7 @@ Rationale: the kernel is the constitutional runtime; tests and durable execution
 
 ## Internalize / deprecate before 1.0
 
-None of the 0.3.0 root exports are removed in this RC. `governDomainDecision` remains deprecated in source and is **not** a package-root export.
+None of the 0.3.0 root exports are removed in 1.0.0. `governDomainDecision` remains deprecated in source and is **not** a package-root export.
 
 ## Full inventory
 
