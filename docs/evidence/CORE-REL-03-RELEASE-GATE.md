@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| Status | See latest closure (CORE-REL-03B) |
-| Release commit (initial) | `17c967cc7e5140abbabf3191a49728308baa4aed` |
-| Tag (local) | `@jiplabs/core-v1.1.0` |
-| Branch | `core-rel-1.0.0` |
-| Stable Auditor exports | **44** (manifest reconciled — see `STABLE-AUDITOR-EXPORT-MANIFEST.md`) |
+| Status | `BLOCKED_NPM_AUTH` (CORE-REL-03B closure complete; publish pending interactive login) |
+| Final release SHA | `2bd64248e41c6675feb9003265059c3123e8398f` |
+| Tag `@jiplabs/core-v1.1.0` | points to final SHA (local, not pushed) |
+| Manifest | `STABLE_AUDITOR_EXPORT_MANIFEST_RECONCILED` — **44** exports |
+| Governance | `CORE_GOVERNANCE_HISTORY_PRESERVED` |
 
 ## Gates passed (pre-publish)
 
