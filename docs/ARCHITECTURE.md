@@ -30,6 +30,11 @@ Product
 | **Durable governance (CORE-02)** | SQLite reference store, replay, integrity, migrations | Stable (reference adapter) |
 | **Evaluation corpus (CORE-03)** | Permanent cases, suites, observational runs, regression | Experimental |
 | **Component registry (CORE-04)** | Agent/model identity, qualification, responsibility assignment | Experimental |
+| **Auditor foundation (CORE-Auditor)** | Scope, engagement, findings, reports, rule-evaluator contracts | Experimental |
+
+## Open-core licensing
+
+`@jiplabs/core` is MIT. Differentiated JipLabs intelligence lives in proprietary packages that depend on Core — never vice versa. See [ADR-001](./decisions/ADR-001-JIPLABS-CORE-OPEN-CORE-STRATEGY-V1.md) and [CAPABILITY-CLASSIFICATION.md](./CAPABILITY-CLASSIFICATION.md).
 
 ## Kernel vs convenience API
 

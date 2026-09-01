@@ -1,11 +1,11 @@
 /**
- * Experimental CORE-03 / CORE-04 surface.
+ * Experimental CORE-03 / CORE-04 / Auditor extended surface.
  *
- * These APIs are also re-exported from `@jiplabs/core` for 0.3.0 compatibility.
- * Importing from `@jiplabs/core/experimental` makes the stability boundary
- * explicit. SemVer for this subpath is not the 1.0 stable contract.
+ * CORE-03 and CORE-04 are also re-exported from `@jiplabs/core` for 0.3.0
+ * compatibility. Auditor stable symbols are on the root barrel from 1.1.0;
+ * this subpath additionally exports experimental-only Auditor helpers.
  *
- * @experimental
+ * @experimental — CORE-03, CORE-04, and Auditor bridge/trace helpers only.
  */
 export {
   EvaluationCorpus,
@@ -78,3 +78,55 @@ export {
   type FallbackRelationship,
   type ReplacementProposal,
 } from "./component-governance/index.js";
+
+export {
+  createAuditScope,
+  createAuditTarget,
+  createAuditEngagement,
+  createAuditFinding,
+  createAuditReport,
+  computeAuditFindingFingerprint,
+  createAuditFindingResolution,
+  computeAuditStateFingerprint,
+  buildAuditGovernedStateView,
+  buildAuditGovernedStateViewFromTraceInput,
+  computeGovernedStateContentHash,
+  runAuditEngagement,
+  assertAuditorIsObservationOnly,
+  buildAuditSeveritySummary,
+  buildAuditReportSummary,
+  listUnresolvedFindingIds,
+  compareFindingStatuses,
+  getEffectiveFindingStatus,
+  isFindingUnresolved,
+  assertFindingHistoryPreserved,
+  isEvaluationCandidateFromFinding,
+  evaluationCaseSourceKindFromFinding,
+  InMemoryAuditArtifactStore,
+  type AuditAdvisory,
+  type AuditEngagement,
+  type AuditEngagementStatus,
+  type AuditFinding,
+  type AuditFindingClassification,
+  type AuditFindingResolution,
+  type AuditFindingSeverity,
+  type AuditFindingStatus,
+  type AuditGovernanceRef,
+  type AuditGovernanceRefType,
+  type AuditRemediation,
+  type AuditReport,
+  type AuditReportStatus,
+  type AuditRuleEvaluator,
+  type AuditRuleEvaluationInput,
+  type AuditRuleEvaluationResult,
+  type AuditRuleFindingDraft,
+  type AuditScope,
+  type AuditScopeKind,
+  type AuditSeveritySummary,
+  type AuditTarget,
+  type AuditTimeRange,
+  type AuditGovernedStateView,
+  type AuditArtifactStore,
+  type AuditorRunnerInput,
+  type AuditorRunnerResult,
+} from "./auditor/index.js";

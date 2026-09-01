@@ -1,19 +1,75 @@
 /**
- * 1.0 API stability contract.
+ * 1.0 / 1.1 API stability contract.
  *
- * Symbols listed here remain importable from `@jiplabs/core` for 0.3.0
- * compatibility, but they are **not** covered by stable SemVer. They may
- * change in a minor 1.x release. Prefer `@jiplabs/core/experimental` when
- * depending on this surface deliberately.
+ * Symbols listed in CORE_EXPERIMENTAL_EXPORTS remain importable from
+ * `@jiplabs/core/experimental` with explicit experimental SemVer.
  *
- * Every other public export from `@jiplabs/core` is `STABLE_1_0`.
+ * STABLE_1_0 — original 1.0.0 contract.
+ * STABLE_1_1 — Auditor primitive promoted in 1.1.0 (additive).
+ *
+ * Every other public export from `@jiplabs/core` is STABLE_1_0 or STABLE_1_1.
  */
-export const CORE_RELEASE_LINE = "1.0" as const;
+export const CORE_RELEASE_LINE = "1.1" as const;
 export const CORE_API_CHANNEL = "stable" as const;
 
-export type CoreApiStability = "STABLE_1_0" | "EXPERIMENTAL";
+export type CoreApiStability = "STABLE_1_0" | "STABLE_1_1" | "EXPERIMENTAL";
 
-export const CORE_EXPERIMENTAL_EXPORTS = [
+/**
+ * Auditor primitive — stable from 1.1.0 (CORE-AUDITOR-02).
+ * Available from `@jiplabs/core` and `@jiplabs/core/experimental`.
+ */
+export const CORE_STABLE_1_1_AUDITOR_EXPORTS = [
+  "AuditAdvisory",
+  "AuditArtifactStore",
+  "AuditEngagement",
+  "AuditEngagementStatus",
+  "AuditFinding",
+  "AuditFindingClassification",
+  "AuditFindingResolution",
+  "AuditFindingSeverity",
+  "AuditFindingStatus",
+  "AuditGovernanceRef",
+  "AuditGovernanceRefType",
+  "AuditGovernedStateView",
+  "AuditRemediation",
+  "AuditReport",
+  "AuditReportStatus",
+  "AuditRuleEvaluator",
+  "AuditRuleEvaluationInput",
+  "AuditRuleEvaluationResult",
+  "AuditRuleFindingDraft",
+  "AuditScope",
+  "AuditScopeKind",
+  "AuditSeveritySummary",
+  "AuditTarget",
+  "AuditTimeRange",
+  "AuditorRunnerInput",
+  "AuditorRunnerResult",
+  "assertAuditorIsObservationOnly",
+  "assertFindingHistoryPreserved",
+  "buildAuditGovernedStateView",
+  "buildAuditReportSummary",
+  "buildAuditSeveritySummary",
+  "computeAuditFindingFingerprint",
+  "computeAuditStateFingerprint",
+  "createAuditEngagement",
+  "createAuditFinding",
+  "createAuditFindingResolution",
+  "createAuditReport",
+  "createAuditScope",
+  "createAuditTarget",
+  "getEffectiveFindingStatus",
+  "InMemoryAuditArtifactStore",
+  "isFindingUnresolved",
+  "listUnresolvedFindingIds",
+  "runAuditEngagement",
+] as const;
+
+/**
+ * Experimental exports re-exported from the root `@jiplabs/core` barrel for
+ * 0.3.0 compatibility (CORE-03 / CORE-04).
+ */
+export const CORE_EXPERIMENTAL_ROOT_EXPORTS = [
   "AssignmentMode",
   "AssignmentPolicy",
   "AgentIdentity",
@@ -80,13 +136,43 @@ export const CORE_EXPERIMENTAL_EXPORTS = [
   "validateValidatorIndependence",
 ] as const;
 
+/**
+ * Experimental exports available only on `@jiplabs/core/experimental`
+ * (not re-exported from the stable root barrel).
+ */
+export const CORE_EXPERIMENTAL_SUBPATH_ONLY_EXPORTS = [
+  "buildAuditGovernedStateViewFromTraceInput",
+  "compareFindingStatuses",
+  "computeGovernedStateContentHash",
+  "evaluationCaseSourceKindFromFinding",
+  "isEvaluationCandidateFromFinding",
+] as const;
+
+export const CORE_EXPERIMENTAL_EXPORTS = [
+  ...CORE_EXPERIMENTAL_ROOT_EXPORTS,
+  ...CORE_EXPERIMENTAL_SUBPATH_ONLY_EXPORTS,
+] as const;
+
+export type CoreStable1_1AuditorExport = (typeof CORE_STABLE_1_1_AUDITOR_EXPORTS)[number];
 export type CoreExperimentalExport = (typeof CORE_EXPERIMENTAL_EXPORTS)[number];
+export type CoreExperimentalRootExport =
+  (typeof CORE_EXPERIMENTAL_ROOT_EXPORTS)[number];
+export type CoreExperimentalSubpathOnlyExport =
+  (typeof CORE_EXPERIMENTAL_SUBPATH_ONLY_EXPORTS)[number];
+
+const STABLE_1_1_SET = new Set<string>(CORE_STABLE_1_1_AUDITOR_EXPORTS);
+const EXPERIMENTAL_SET = new Set<string>(CORE_EXPERIMENTAL_EXPORTS);
+
+export function isCoreStable1_1AuditorExport(name: string): boolean {
+  return STABLE_1_1_SET.has(name);
+}
 
 export function isCoreExperimentalExport(name: string): boolean {
-  return (CORE_EXPERIMENTAL_EXPORTS as readonly string[]).includes(name);
+  return EXPERIMENTAL_SET.has(name);
 }
 
 export function coreApiStability(name: string): CoreApiStability | null {
+  if (isCoreStable1_1AuditorExport(name)) return "STABLE_1_1";
   if (isCoreExperimentalExport(name)) return "EXPERIMENTAL";
   return "STABLE_1_0";
 }

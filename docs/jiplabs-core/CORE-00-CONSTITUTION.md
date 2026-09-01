@@ -44,6 +44,7 @@ Every entity carries:
 | `RollbackPlan` / `RollbackExecution` | Reversibility contract |
 | `DecisionTrace` | Full reconstructable audit trail |
 | `GovernanceEvent` | Append-only ledger entry |
+| `AuditEngagement` / `AuditFinding` / `AuditReport` | Engagement-level audit artifacts (experimental) |
 
 ## Governed autonomy modes
 
@@ -59,9 +60,14 @@ Policies declare autonomy mode — Core does **not** assume one global risk mode
 
 ```
 Proposal  ≠  Decision  ≠  Action  ≠  Outcome  ≠  Evaluation
+Audit finding  ≠  Decision  ≠  Authorization  ≠  Execution
 ```
 
-A proposal is not a decision. A decision is not an execution. An execution is not an outcome.
+A proposal is not a decision. A decision is not an execution. An execution is not an outcome. An audit finding recommends; it does not authorize.
+
+## Open-core licensing
+
+`@jiplabs/core` is MIT and provides domain-agnostic governance, evaluation, and audit **mechanisms**. JipLabs differentiated intelligence lives in explicitly proprietary packages that depend on Core — never vice versa. See [ADR-001](../../decisions/ADR-001-JIPLABS-CORE-OPEN-CORE-STRATEGY-V1.md).
 
 ## Explainability
 

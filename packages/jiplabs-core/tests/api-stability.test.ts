@@ -4,10 +4,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   CORE_API_CHANNEL,
-  CORE_EXPERIMENTAL_EXPORTS,
+  CORE_EXPERIMENTAL_ROOT_EXPORTS,
+  CORE_EXPERIMENTAL_SUBPATH_ONLY_EXPORTS,
   CORE_RELEASE_LINE,
+  CORE_STABLE_1_1_AUDITOR_EXPORTS,
   coreApiStability,
   isCoreExperimentalExport,
+  isCoreStable1_1AuditorExport,
 } from "../src/index.js";
 
 const srcRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
@@ -32,8 +35,8 @@ describe("CORE-STAB-01 API stability classification", () => {
     readFileSync(join(srcRoot, "index.ts"), "utf8"),
   );
 
-  it("publishes the stable 1.0 channel metadata", () => {
-    expect(CORE_RELEASE_LINE).toBe("1.0");
+  it("publishes the stable 1.1 channel metadata", () => {
+    expect(CORE_RELEASE_LINE).toBe("1.1");
     expect(CORE_API_CHANNEL).toBe("stable");
   });
 
@@ -41,13 +44,39 @@ describe("CORE-STAB-01 API stability classification", () => {
     expect(publicExports.length).toBeGreaterThan(200);
     for (const name of publicExports) {
       const stability = coreApiStability(name);
-      expect(stability === "STABLE_1_0" || stability === "EXPERIMENTAL").toBe(true);
+      expect(
+        stability === "STABLE_1_0" ||
+          stability === "STABLE_1_1" ||
+          stability === "EXPERIMENTAL",
+      ).toBe(true);
     }
   });
 
-  it("every experimental name is actually exported from the root", () => {
-    for (const name of CORE_EXPERIMENTAL_EXPORTS) {
+  it("every stable 1.1 auditor export is on the root barrel", () => {
+    for (const name of CORE_STABLE_1_1_AUDITOR_EXPORTS) {
+      expect(publicExports, `missing stable auditor export ${name}`).toContain(name);
+      expect(isCoreStable1_1AuditorExport(name)).toBe(true);
+      expect(isCoreExperimentalExport(name)).toBe(false);
+    }
+  });
+
+  it("auditor runner is stable not experimental", () => {
+    expect(isCoreStable1_1AuditorExport("runAuditEngagement")).toBe(true);
+    expect(isCoreExperimentalExport("runAuditEngagement")).toBe(false);
+  });
+
+  it("every root experimental name is exported from the root barrel", () => {
+    for (const name of CORE_EXPERIMENTAL_ROOT_EXPORTS) {
       expect(publicExports, `missing experimental export ${name}`).toContain(name);
+    }
+  });
+
+  it("subpath-only experimental names are not on the root barrel", () => {
+    for (const name of CORE_EXPERIMENTAL_SUBPATH_ONLY_EXPORTS) {
+      expect(publicExports, `subpath-only export on root ${name}`).not.toContain(
+        name,
+      );
+      expect(isCoreExperimentalExport(name)).toBe(true);
     }
   });
 

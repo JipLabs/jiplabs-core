@@ -14,6 +14,34 @@ From published **1.0.0**:
 
 See [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) and [docs/API-STABILITY.md](../../docs/API-STABILITY.md).
 
+## [Unreleased] — 1.1.0
+
+### Added — Auditor stable surface (CORE-AUDITOR-02)
+
+Promotes the governed **Auditor** primitive from experimental to stable `STABLE_1_1` exports.
+
+- `runAuditEngagement` — observation-only audit runner
+- Audit contracts: `AuditScope`, `AuditTarget`, `AuditEngagement`, `AuditFinding`, `AuditReport`, `AuditFindingResolution`
+- `AuditRuleEvaluator` extension point for product-specific rules
+- `AuditGovernedStateView` + `buildAuditGovernedStateView`
+- Finding fingerprint and state fingerprint helpers
+- Resolution helpers (`getEffectiveFindingStatus`, append-only history)
+- `AuditArtifactStore` + `InMemoryAuditArtifactStore` reference implementation
+
+Auditor verifies governed history; it does **not** authorize execution or mutate product records.
+
+Experimental-only Auditor helpers remain on `@jiplabs/core/experimental` (evaluation bridge, trace-input view builder).
+
+Evidence: Quinté Lab Production Integration #1, JipComply Production Integration #2.
+
+ADR: [ADR-002](../docs/decisions/ADR-002-JIPLABS-CORE-AUDITOR-STABLE-PROMOTION.md).
+
+### Compatibility
+
+- Additive — all `STABLE_1_0` exports unchanged
+- `CORE_RELEASE_LINE` → `1.1`
+- `@jiplabs/core/experimental` continues to export full Auditor surface
+
 ## 1.0.0 — 2026-08-27
 
 First **stable** JipLabs Core release. No new functional primitives versus `0.3.0` / `1.0.0-rc.1`.
