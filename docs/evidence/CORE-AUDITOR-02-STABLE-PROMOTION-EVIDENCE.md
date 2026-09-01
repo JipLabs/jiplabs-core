@@ -22,7 +22,7 @@ All ten criteria: **PASS** (see `AUDITOR-PROMOTION-CRITERIA.md` and ADR-002).
 
 ## Stable surface
 
-45 exports in `CORE_STABLE_1_1_AUDITOR_EXPORTS`.
+44 exports in `CORE_STABLE_1_1_AUDITOR_EXPORTS` (see `STABLE-AUDITOR-EXPORT-MANIFEST.md`).
 
 ## Experimental retained
 

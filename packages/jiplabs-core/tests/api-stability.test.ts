@@ -65,6 +65,10 @@ describe("CORE-STAB-01 API stability classification", () => {
     expect(isCoreExperimentalExport("runAuditEngagement")).toBe(false);
   });
 
+  it("stable 1.1 auditor manifest contains exactly 44 exports", () => {
+    expect(CORE_STABLE_1_1_AUDITOR_EXPORTS.length).toBe(44);
+  });
+
   it("every root experimental name is exported from the root barrel", () => {
     for (const name of CORE_EXPERIMENTAL_ROOT_EXPORTS) {
       expect(publicExports, `missing experimental export ${name}`).toContain(name);
