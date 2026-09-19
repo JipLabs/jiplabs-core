@@ -1052,7 +1052,7 @@ describe("CORE-02 durable governance", () => {
   it("46. no external service dependency", () => {
     const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const pkg = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8"));
-    expect(pkg.dependencies).toEqual({});
+    expect(pkg.dependencies ?? {}).toEqual({});
   });
 
   it("ledger integrity hash chain verifies", () => {
