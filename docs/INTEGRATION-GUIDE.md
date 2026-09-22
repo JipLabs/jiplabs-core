@@ -4,6 +4,7 @@
 
 | Need | API |
 |---|---|
+| Evaluate ALLOW / BLOCK / REVIEW without actor lifecycle | `evaluatePolicy` |
 | Govern a decision; product executes (or does not execute) | `evaluateDomainDecisionAuthorization` |
 | Core should run the executor, outcomes, evaluation, rollback | `GovernorKernel` |
 | Observe-only / shadow | Authorize-only + `failureBehavior: "SHADOW"` and/or a domain executor that returns `BLOCKED` |
@@ -78,9 +79,10 @@ Stable consumers should branch on `GovernanceError.code` / authorize-only `resul
 | Invalid input | `MISSING_FIELD`, `INVALID_VALUE` |
 | Unauthorized | `AUTHORITY_*`, `OVERRIDE_AUTHORITY_MISSING` |
 | Policy rejection | `POLICY_NOT_ACTIVE`, `GATE_FAILED` |
+| Policy evaluation | `POLICY_EVALUATION_FAILED`, `ENTITLEMENT_NOT_PERMITTED` |
 | Execution | `ACTION_NOT_AUTHORIZED`, `DUPLICATE_EXECUTION` |
 | Concurrency | `EXECUTION_CLAIM_HELD`, `IDEMPOTENCY_CONFLICT` |
 | Persistence | `STORAGE_*` |
 | Programmer misuse | invalid kernel transition, adapter domain mismatch |
 
-Authorize-only returns `{ ok: false, code, message }` rather than throwing for ordinary denial.
+`evaluatePolicy` returns `{ ok: false, code, message, evaluatedAt }` for operational failure. `REVIEW` is `ok: true`.

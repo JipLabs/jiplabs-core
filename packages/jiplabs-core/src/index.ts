@@ -33,6 +33,8 @@ export {
 
 export { compareIso } from "./envelope.js";
 
+export { canonicalJson, sha256Canonical, sha256Hex } from "./hash.js";
+
 export { createActor, type Actor, type ActorType } from "./actors/index.js";
 
 export {
@@ -75,6 +77,35 @@ export {
   type PolicyVersion,
   type RollbackRequirements,
 } from "./policies/index.js";
+
+export {
+  POLICY_DECISIONS,
+  POLICY_EVALUATION_CONTRACT_VERSION,
+  assertEntitlementPermitted,
+  composePolicyDecisions,
+  createPolicyEvaluationResult,
+  evaluatePolicy,
+  hashPolicyEvaluationResult,
+  isEntitlementPermitted,
+  isPolicyAllow,
+  isPolicyDecision,
+  moreRestrictivePolicyDecision,
+  parsePolicyEvaluationResult,
+  policyDecisionRank,
+  policyEvaluationSerializationPayload,
+  serializePolicyEvaluationResult,
+  type PolicyContribution,
+  type PolicyDecision,
+  type PolicyEvaluateInput,
+  type PolicyEvaluationContractVersion,
+  type PolicyEvaluationFailure,
+  type PolicyEvaluationOutcome,
+  type PolicyEvaluationResult,
+  type PolicyEvaluationSuccess,
+  type PolicyIdentity,
+  type PolicyRule,
+  type PolicySourceKind,
+} from "./policy-evaluation/index.js";
 
 export {
   createEvidence,

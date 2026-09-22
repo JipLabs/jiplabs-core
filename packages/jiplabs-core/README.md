@@ -6,6 +6,8 @@ Governance kernel for governed autonomous and semi-autonomous systems.
 
 This package is domain-agnostic. Product adapters depend on Core. Core does not depend on any product.
 
+For commercial eligibility (jurisdiction / provider overlays), use `@jiplabs/commerce-policy`, which consumes `evaluatePolicy`. Core does not contain country lists.
+
 ---
 
 ## What problem this solves

@@ -94,6 +94,10 @@ describe("CORE-STAB-01 API stability classification", () => {
       "createEvidence",
       "createAuthorityGrant",
       "createPolicyVersion",
+      "evaluatePolicy",
+      "createPolicyEvaluationResult",
+      "composePolicyDecisions",
+      "isEntitlementPermitted",
     ]) {
       expect(isCoreExperimentalExport(name)).toBe(false);
       expect(publicExports).toContain(name);

@@ -56,6 +56,12 @@ outcome: PROMOTE (all pass) | KEEP / REJECT / SHADOW (policy-defined)
 
 Domain products supply policy content via `DomainPolicyProvider`. Core evaluates gates deterministically.
 
+## Policy evaluation (ALLOW / BLOCK / REVIEW)
+
+Actor-authority gates above are the lifecycle constitution. A smaller reusable contract, `evaluatePolicy`, produces `ALLOW` | `BLOCK` | `REVIEW` with reason codes, evidence refs, policy identity, and canonical serialization. See [POLICY-EVALUATION.md](./POLICY-EVALUATION.md).
+
+That contract does **not** contain commercial country lists. Commercial eligibility is `@jiplabs/commerce-policy`.
+
 ## Autonomy modes
 
 | Mode | Behavior |

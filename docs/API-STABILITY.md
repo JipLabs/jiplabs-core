@@ -49,6 +49,7 @@ The experimental subpath **also** exports `createLearningSignal` and `createGove
 | Reconstruct | `reconstructDecisionFromSnapshot` |
 | Authority | `createAuthorityGrant`, `evaluateAuthorityGrant`, `revokeAuthorityGrant` |
 | Policy | `createPolicyVersion`, `activatePolicyVersion`, `evaluatePolicyGates` |
+| Policy evaluation | `evaluatePolicy`, `composePolicyDecisions`, `isEntitlementPermitted` |
 | Evidence | `createEvidence` |
 | Durable store | `openNodeSqliteGovernanceStorage` |
 

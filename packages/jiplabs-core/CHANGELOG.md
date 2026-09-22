@@ -16,6 +16,17 @@ See [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) and [docs/API-STABILITY
 
 ## [Unreleased] — 1.1.0
 
+### Added — Generic policy evaluation contract
+
+Additive, domain-agnostic ALLOW / BLOCK / REVIEW evaluation alongside existing `PolicyVersion` gates:
+
+- `evaluatePolicy`, `createPolicyEvaluationResult`, `composePolicyDecisions`
+- `serializePolicyEvaluationResult` / `parsePolicyEvaluationResult` (canonical, historically reconstructable)
+- `isEntitlementPermitted` / `assertEntitlementPermitted` (fail-closed; REVIEW and evaluation failure are not ALLOW)
+- Overlays may only tighten (`BLOCK > REVIEW > ALLOW`)
+
+Commercial jurisdiction lists are **not** in Core. See `@jiplabs/commerce-policy`.
+
 ### Added — Auditor stable surface (CORE-AUDITOR-02)
 
 Promotes the governed **Auditor** primitive from experimental to stable `STABLE_1_1` exports.

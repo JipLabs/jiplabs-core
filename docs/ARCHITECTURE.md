@@ -31,6 +31,9 @@ Product
 | **Evaluation corpus (CORE-03)** | Permanent cases, suites, observational runs, regression | Experimental |
 | **Component registry (CORE-04)** | Agent/model identity, qualification, responsibility assignment | Experimental |
 | **Auditor foundation (CORE-Auditor)** | Scope, engagement, findings, reports, rule-evaluator contracts | Experimental |
+| **Policy evaluation** | `evaluatePolicy` — ALLOW / BLOCK / REVIEW, reason codes, overlays, fail-closed entitlement | Stable (additive) |
+
+Commercial jurisdiction rules are **not** in Core. They live in `@jiplabs/commerce-policy`, which depends on Core.
 
 ## Open-core licensing
 

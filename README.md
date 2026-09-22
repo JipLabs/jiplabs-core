@@ -2,7 +2,10 @@
 
 Domain-agnostic governance constitution and runtime for governed autonomous systems.
 
-Package: [`@jiplabs/core`](packages/jiplabs-core) — current line: **1.0.0**.
+Packages:
+
+- [`@jiplabs/core`](packages/jiplabs-core) — domain-agnostic governance kernel
+- [`@jiplabs/commerce-policy`](packages/jiplabs-commerce-policy) — commercial eligibility rules (depends on Core)
 
 ```text
 Product
@@ -42,5 +45,8 @@ Start here: [packages/jiplabs-core/README.md](packages/jiplabs-core/README.md)
 - [Migration 0.3 → 1.0](docs/MIGRATION-0.3-TO-1.0.md)
 - [Open-core strategy (ADR-001)](docs/decisions/ADR-001-JIPLABS-CORE-OPEN-CORE-STRATEGY-V1.md)
 - [Capability classification](docs/CAPABILITY-CLASSIFICATION.md)
+- [Policy evaluation](docs/jiplabs-core/POLICY-EVALUATION.md)
+- [Commercial eligibility — Account](docs/commerce-policy/ACCOUNT-INTEGRATION.md)
+- [Commercial eligibility — product enforcement](docs/commerce-policy/PRODUCT-ENFORCEMENT.md)
 - [Constitution](docs/jiplabs-core/CORE-00-CONSTITUTION.md)
 - [CORE-VAL-01 validation](docs/CORE-VAL-01-CROSS-DOMAIN-VALIDATION.md)

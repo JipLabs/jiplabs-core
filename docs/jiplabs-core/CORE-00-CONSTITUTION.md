@@ -35,6 +35,7 @@ Every entity carries:
 | `Actor` | Durable identity with explicit scopes |
 | `Authority` / `AuthorityGrant` | Named authority scopes bound to actors and resources |
 | `Policy` / `PolicyVersion` / `PolicyGate` | Versioned decision rules |
+| `PolicyEvaluationResult` | Generic ALLOW / BLOCK / REVIEW evaluation (not the Decision lifecycle) |
 | `Evidence` / `ObservationRef` | Recorded proof |
 | `DecisionProposal` | Intent — not yet a decision |
 | `Decision` | Governed outcome — not yet an execution |

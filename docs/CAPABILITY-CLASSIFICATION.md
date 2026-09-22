@@ -31,6 +31,8 @@ If any answer strongly favors proprietary treatment, classify `JIPLABS_PROPRIETA
 | Evaluation corpus mechanism (CORE-03) | `CORE_MIT` | `@jiplabs/core/experimental` | Generic contracts; corpus **content** may be proprietary |
 | Component governance (CORE-04) | `CORE_MIT` | `@jiplabs/core/experimental` | Generic registry contracts |
 | Evaluation corpus **content** | `JIPLABS_PROPRIETARY` | Future proprietary package | Benchmark datasets, operational cases |
+| Policy evaluation contract (`evaluatePolicy`, ALLOW/BLOCK/REVIEW) | `CORE_MIT` | `@jiplabs/core` stable | Generic result/composition/fail-closed entitlement |
+| Commercial eligibility rules / jurisdiction lists / provider overlays | `JIPLABS_PROPRIETARY` | `@jiplabs/commerce-policy` | Domain policy; depends on Core; never the reverse |
 | Advanced policy packs | `JIPLABS_PROPRIETARY` | Future proprietary package | Domain intelligence packs |
 | Auditor foundation (CORE-Auditor) | `CORE_MIT` | `@jiplabs/core/experimental` | Generic audit contracts |
 | Audit intelligence / anomaly detection | `JIPLABS_PROPRIETARY` | Future proprietary package | Cross-product learned strategies |

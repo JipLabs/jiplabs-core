@@ -7,8 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "pnpm --filter @jiplabs/core test",
-    "build": "pnpm --filter @jiplabs/core build",
-    "lint": "pnpm --filter @jiplabs/core lint"
+    "test": "pnpm --filter @jiplabs/core test && pnpm --filter @jiplabs/commerce-policy test",
+    "build": "pnpm --filter @jiplabs/core build && pnpm --filter @jiplabs/commerce-policy build",
+    "lint": "pnpm --filter @jiplabs/core lint && pnpm --filter @jiplabs/core build && pnpm --filter @jiplabs/commerce-policy lint"
   }
 }

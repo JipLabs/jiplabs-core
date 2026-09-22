@@ -1,0 +1,39 @@
+{
+  "name": "@jiplabs/commerce-policy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JipLabs commercial eligibility policy — jurisdiction rules and provider overlays. Consumes @jiplabs/core contracts; never the reverse.",
+  "license": "UNLICENSED",
+  "author": "JipLabs LLC",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jiplabs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.11"
+  }
+}
