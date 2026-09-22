@@ -40,7 +40,7 @@ describe("dependency boundary", () => {
     const pkg = JSON.parse(
       readFileSync(join(here, "..", "package.json"), "utf8"),
     ) as { dependencies?: Record<string, string> };
-    expect(pkg.dependencies?.["@jiplabs/core"]).toBe("workspace:*");
+    expect(pkg.dependencies?.["@jiplabs/core"]).toBe("workspace:^1.2.0");
 
     const corePkg = JSON.parse(
       readFileSync(

@@ -14,7 +14,9 @@ From published **1.0.0**:
 
 See [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md) and [docs/API-STABILITY.md](../../docs/API-STABILITY.md).
 
-## [Unreleased] — 1.1.0
+## 1.2.0 — 2026-09-21
+
+Published npm `@jiplabs/core@1.1.0` (2026-09-01) does **not** include this contract. Do not install `1.1.0` expecting `evaluatePolicy`.
 
 ### Added — Generic policy evaluation contract
 
@@ -26,6 +28,10 @@ Additive, domain-agnostic ALLOW / BLOCK / REVIEW evaluation alongside existing `
 - Overlays may only tighten (`BLOCK > REVIEW > ALLOW`)
 
 Commercial jurisdiction lists are **not** in Core. See `@jiplabs/commerce-policy`.
+
+Package identity: this version is the first release that contains JIPLABS-COMMERCIAL-ELIGIBILITY-01 (`0089b0548ef9964405d92d4ba20196aca3716e12`) plus this version boundary.
+
+## 1.1.0 — 2026-09-01
 
 ### Added — Auditor stable surface (CORE-AUDITOR-02)
 

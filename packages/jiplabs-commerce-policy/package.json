@@ -1,10 +1,19 @@
 {
   "name": "@jiplabs/commerce-policy",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "JipLabs commercial eligibility policy — jurisdiction rules and provider overlays. Consumes @jiplabs/core contracts; never the reverse.",
   "license": "UNLICENSED",
   "author": "JipLabs LLC",
+  "homepage": "https://jiplabs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JipLabs/jiplabs-core.git",
+    "directory": "packages/jiplabs-commerce-policy"
+  },
+  "bugs": {
+    "url": "https://github.com/JipLabs/jiplabs-core/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -23,13 +32,16 @@
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@jiplabs/core": "workspace:*"
+    "@jiplabs/core": "workspace:^1.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
