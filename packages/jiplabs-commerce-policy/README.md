@@ -47,3 +47,15 @@ Account must call `evaluateCommercialEligibility`. It must not host a second pol
 ## Product gate
 
 Call `assertCommercialActionAllowed` on the backend before any gated commercial event. UI hiding is not enforcement.
+
+## Payout eligibility (0.2.0)
+
+`payout-eligibility@v1` decides whether a JipLabs product may pay a cash award to a beneficiary. It returns `ALLOW`, `BLOCK` or `REVIEW` through the Core policy contract.
+
+- Countries: the shared `commercial-jurisdiction@v1` lists (residence, nationality and bank destination). No product keeps its own list.
+- Regions: OFAC region embargoes that ISO country codes cannot express (`UA-43`, `UA-40`, `UA-14`, `UA-09`).
+- Persons and entities: evidence from the OFAC SDN and consolidated non-SDN lists (`screenName` over a `buildSanctionsSnapshot`). A name match is `REVIEW`, never cleared automatically; a confirmed match is `BLOCK`.
+- Freshness: screening older than 72 hours or a list published more than 14 days earlier is `REVIEW`.
+- Identity and age must be verified, and residence and bank destination known, or the result is `REVIEW`.
+
+The screening module does no I/O. The caller downloads the lists from `OFAC_LIST_SOURCES` and records the snapshot hash.
