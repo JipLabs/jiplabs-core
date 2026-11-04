@@ -57,4 +57,13 @@ describe("dependency boundary", () => {
     }
     expect(importsCore).toBe(true);
   });
+
+  it("@jiplabs/commerce-policy cannot be published publicly by accident", () => {
+    const pkg = JSON.parse(
+      readFileSync(join(here, "..", "package.json"), "utf8"),
+    ) as { private?: boolean; license?: string; publishConfig?: { access?: string } };
+    expect(pkg.license).toBe("UNLICENSED");
+    expect(pkg.private).toBe(true);
+    expect(pkg.publishConfig?.access).not.toBe("public");
+  });
 });
