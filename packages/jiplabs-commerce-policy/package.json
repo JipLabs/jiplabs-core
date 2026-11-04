@@ -1,7 +1,7 @@
 {
   "name": "@jiplabs/commerce-policy",
   "version": "0.2.0",
-  "private": false,
+  "private": true,
   "description": "JipLabs commercial eligibility policy — jurisdiction rules and provider overlays. Consumes @jiplabs/core contracts; never the reverse.",
   "license": "UNLICENSED",
   "author": "JipLabs LLC",
@@ -33,7 +33,7 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "restricted"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
